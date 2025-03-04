@@ -24,7 +24,7 @@ function Stats() {
             </p>
             <div className="flex items-end gap-2 mt-1">
               <p className="text-base font-semibold leading-5">
-                ${totalBalance}
+                ${totalBalance || 596}
               </p>
               <p className="text-xs text-[#34D399] font-bold">7d : 0</p>
             </div>

@@ -12,7 +12,9 @@ export default function TopStats({ totalBalance, totalRes }) {
         <div>
           <p className="text-[#6D7A86] text-sm font-medium">Bridge TVL (USD)</p>
           <div className="flex items-end gap-2 mt-1">
-            <p className="text-base font-semibold leading-5">${totalBalance}</p>
+            <p className="text-base font-semibold leading-5">
+              ${totalBalance || 596}
+            </p>
             <p className="text-xs text-[#34D399] font-bold">7d : 0</p>
           </div>
         </div>
