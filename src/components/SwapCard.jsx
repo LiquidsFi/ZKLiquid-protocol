@@ -113,7 +113,7 @@ function SwapCard({
     freighterConnecting,
   } = useContext(SidebarContext);
 
-  console.log("total debit amount", totalDebitedAmount);
+  // console.log("total debit amount", totalDebitedAmount);
 
   // console.log("selected source chain", selectedSourceChain?.id);
 
@@ -162,7 +162,7 @@ function SwapCard({
 
       const amount = Soroban.formatTokenAmount(response?.data?.data, 7);
 
-      console.log("stellar chain balance", amount);
+      // console.log("stellar chain balance", amount);
 
       setBalance(() => amount);
     }
@@ -173,7 +173,7 @@ function SwapCard({
 
   useEffect(() => {
     async function fetchBridgeFeeXLM() {
-      console.log("THIS RAN");
+      // console.log("THIS RAN");
       const body = {
         pubKey: userPubKey,
         fee: BASE_FEE,
@@ -291,17 +291,20 @@ function SwapCard({
         functionName: "decimals",
       });
 
+      // console.log(
+      //   "the total debited",
+      //   Number(formatUnits(fees[0], tokenDecimal)) +
+      //     Number(amount) +
+      //     (Number(amount) * Number(fees[1])) / 100000
+      // );
+
       setTotalDebitedAmount(
         Number(formatUnits(fees[0], tokenDecimal)) +
+          Number(amount) +
           (Number(amount) * Number(fees[1])) / 100000
       );
     }
-    if (
-      address &&
-      selectedSourceChain?.id !== 1200 &&
-      amount &&
-      selectedDestinationChain?.id
-    ) {
+    if (address && selectedSourceChain?.id !== 1200 && amount) {
       fetchTotalAmountEVM();
     }
   }, [
@@ -414,7 +417,7 @@ function SwapCard({
         { type: "i128", value: amount },
       ];
 
-      console.log(args);
+      // console.log(args);
 
       const resSign = await anyInvokeMainnet(
         userPubKey,
@@ -469,7 +472,7 @@ function SwapCard({
         account: addr,
       });
 
-      console.log("balance result", formatUnits(result, tokenDecimal));
+      // console.log("balance result", formatUnits(result, tokenDecimal));
       setBalance(() => formatUnits(result, tokenDecimal));
     }
     if (selectedSourceChain && address && selectedSourceChain?.id !== 1200) {

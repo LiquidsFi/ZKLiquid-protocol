@@ -1,9 +1,14 @@
 import { ArrowRight } from "iconsax-react";
 import USDT from "../assets/svg/usdt.svg";
 
-const BASE_CCIP_URL = "https://ccip.chain.link/msg";
-const handleCCIPOpen = (id) => {
-  window.open(`${BASE_CCIP_URL}/${id}`, "_blank");
+const BASE_URLS = {
+  1200: "https://stellar.expert/explorer/public/tx",
+  56: "https://bscscan.com/tx",
+  1: "https://etherscan.io/tx",
+};
+
+const handleCCIPOpen = (tx) => {
+  window.open(`${BASE_URLS[tx?.from]}/${tx?.id}`, "_blank");
 };
 
 export default function TransactionHistory({ transactionData }) {
@@ -40,7 +45,7 @@ export default function TransactionHistory({ transactionData }) {
                         <tr
                           key={index}
                           className="cursor-pointer hover:bg-[#202026]"
-                          onClick={() => handleCCIPOpen(transaction.id)}
+                          onClick={() => handleCCIPOpen(transaction)}
                         >
                           <td className="px-4 py-4 text-sm font-bold text-gray-200 sm:px-6 whitespace-nowrap">
                             <div className="inline-flex items-center">

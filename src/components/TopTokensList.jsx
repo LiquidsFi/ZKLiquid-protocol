@@ -26,7 +26,7 @@ function TopTokensList({ onTokenSelect, transactionData }) {
     <div className=" ">
       <div className="flex items-end justify-between ">
         <div className="flex justify-start gap-2 p-1 font-bold text-lg  ">
-          Latest Transactions
+          Latest Transfers
         </div>
         {/* {isTokenList && <SearchBar onChangeKeyword={onChangeKeyword} />} */}
       </div>
