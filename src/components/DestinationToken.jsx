@@ -20,40 +20,38 @@ function DestinationToken({ width, switchToken }) {
     }
   }, [error]);
 
-  if (chain) {
-    return (
-      <Menu
-        as="div"
-        className={clsx(
-          "relative inline-block text-left",
-          width === "full" && "w-full"
-        )}
-      >
-        {({ open }) => (
-          <>
-            <Menu.Button
-              className={clsx(
-                "flex gap-2 items-center p-1 pr-2.5 rounded-full text-sm w-[160px]  font-medium border border-gray-400 transition-colors hover:bg-dark-300",
-                width === "full" && "w-full",
-                open ? "bg-dark-300" : "bg-dark-400"
-              )}
-            >
-              <>
-                <div className="bg-[#101115] p-1 rounded-full">
-                  <img
-                    className="w-6 h-6"
-                    src={`/cryptoIcons/${switchToken.name}.svg`}
-                    alt=""
-                  />
-                </div>
-                <span className="lg:hidden xl:inline">{switchToken.name}</span>
-              </>
-            </Menu.Button>
-          </>
-        )}
-      </Menu>
-    );
-  }
+  return (
+    <Menu
+      as="div"
+      className={clsx(
+        "relative inline-block text-left",
+        width === "full" && "w-full"
+      )}
+    >
+      {({ open }) => (
+        <>
+          <Menu.Button
+            className={clsx(
+              "flex gap-2 items-center p-1 pr-2.5 rounded-full text-sm w-[160px]  font-medium border border-gray-400 transition-colors hover:bg-dark-300",
+              width === "full" && "w-full",
+              open ? "bg-dark-300" : "bg-dark-400"
+            )}
+          >
+            <>
+              <div className="bg-[#101115] p-1 rounded-full">
+                <img
+                  className="w-6 h-6"
+                  src={`/cryptoIcons/${switchToken.name}.svg`}
+                  alt=""
+                />
+              </div>
+              <span className="lg:hidden xl:inline">{switchToken.name}</span>
+            </>
+          </Menu.Button>
+        </>
+      )}
+    </Menu>
+  );
 }
 
 export default DestinationToken;

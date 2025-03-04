@@ -649,7 +649,7 @@ function SwapCard({
           <div className="flex flex-col w-full items-start space-y-3 ">
             <p className="text-sm font-medium text-dark-100">From</p>
 
-            {isConnected && (
+            {(isConnected || userPubKey) && (
               <div className="flex items-end justify-between  w-full ">
                 <SwitchNetworkDropdown
                   isMobile={isMobile}
@@ -718,7 +718,7 @@ function SwapCard({
         <div className="flex   items-end justify-between mt-4">
           <div className="flex w-full  flex-col items-start space-y-3">
             <p className="text-sm font-medium text-dark-100">To</p>
-            {isConnected && (
+            {(isConnected || userPubKey) && (
               <div className="flex w-full  items-end justify-between ">
                 <DestinationChainDropdown
                   allChains={allChains}
