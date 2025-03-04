@@ -36,7 +36,15 @@ const router = createBrowserRouter(
           <Route index element={<Liquidity />} />
         </Route>
         <Route path="/loans">
-          <Route index element={<div>Loans page</div>} />
+          <Route
+            index
+            element={
+              <div className="absolute top-0 left-0 w-full h-screen opacity-40 bg-black z-10 text-white text-6xl flex  items-center justify-center">
+                {" "}
+                Coming soon...
+              </div>
+            }
+          />
         </Route>
         <Route path="/rewards">
           <Route index element={<div>Rewards page</div>} />

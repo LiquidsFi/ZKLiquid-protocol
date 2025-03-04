@@ -31,15 +31,15 @@ export default [
     icon: <Bubble />,
     path: "/loans",
   },
-  {
-    title: "Rewards and Quests",
-    icon: <Award />,
-    path: "/rewards",
-  },
+  // {
+  //   title: "Rewards and Quests",
+  //   icon: <Award />,
+  //   path: "/rewards",
+  // },
 
-  {
-    title: "Faucet",
-    icon: <BuyCrypto />,
-    path: "/faucet",
-  },
+  // {
+  //   title: "Faucet",
+  //   icon: <BuyCrypto />,
+  //   path: "/faucet",
+  // },
 ];
