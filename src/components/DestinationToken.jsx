@@ -33,7 +33,7 @@ function DestinationToken({ width, switchToken }) {
           <>
             <Menu.Button
               className={clsx(
-                "flex gap-2 items-center p-1 pr-2.5 rounded-full text-sm w-[130px]  font-medium border border-gray-400 transition-colors hover:bg-dark-300",
+                "flex gap-2 items-center p-1 pr-2.5 rounded-full text-sm w-[160px]  font-medium border border-gray-400 transition-colors hover:bg-dark-300",
                 width === "full" && "w-full",
                 open ? "bg-dark-300" : "bg-dark-400"
               )}

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from "react";
 
 function useMediaQuery(query, whenTrue = true, whenFalse = false) {
   const mediaQuery = useMemo(() => window.matchMedia(query), [query]);
@@ -6,9 +6,9 @@ function useMediaQuery(query, whenTrue = true, whenFalse = false) {
 
   useLayoutEffect(() => {
     const handler = (e) => setMatch(!!e.matches);
-    mediaQuery.addEventListener('change', handler);
+    mediaQuery.addEventListener("change", handler);
     return () => {
-      mediaQuery.removeEventListener('change', handler);
+      mediaQuery.removeEventListener("change", handler);
     };
   }, [mediaQuery]);
 

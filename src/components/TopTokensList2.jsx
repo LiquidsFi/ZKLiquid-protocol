@@ -17,7 +17,7 @@ import "./css/pagination.css";
 
 function TopTokensList({ onTokenSelect }) {
   const { address, isConnected } = useContext(WagmiContext);
-  const { chain } = useNetwork();
+  const { chain } = useAccount();
   const [tokens, setTokens] = useState([]);
   const [tokensWithPrice, setTokensWithPrice] = useState([]);
   const [keyword, setKeyword] = useState("");

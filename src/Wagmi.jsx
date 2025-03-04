@@ -4,25 +4,13 @@ import React from "react";
 import { createConfig, http, WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import {
-  avalancheFuji,
-  sepolia,
-  // polygonZkEvmCardona,
-  // arbitrumSepolia,
-  bscTestnet,
-  polygonAmoy,
-  // baseSepolia,
-} from "wagmi/chains";
+import { mainnet, bsc } from "wagmi/chains";
 
 import { walletConnect } from "wagmi/connectors";
 
 const addedChains = [
-  avalancheFuji,
-  sepolia,
-  // arbitrumSepolia,
-  bscTestnet,
-  // polygonZkEvmCardona,
-  polygonAmoy,
+  mainnet,
+  bsc,
   // baseSepolia,
 ];
 
@@ -33,13 +21,15 @@ export const config = createConfig({
     walletConnect({ projectId: "35c6df36716ecbd04dcc4cedba364876" }),
   ],
   transports: {
-    [sepolia.id]: http(
-      "https://eth-sepolia.g.alchemy.com/v2/ZA8wYWOwu6uSKNWkXEw-715wbvPwDmWv"
+    [mainnet.id]: http(
+      "https://rpc.ankr.com/eth/7a27876214d22119ec2a70f6adb115e7eb45ede20a30f49f945cfcd5563e5a3b"
     ),
-    [avalancheFuji.id]: http(),
+
     // [arbitrumSepolia.id]: http(),
-    [polygonAmoy.id]: http(),
-    [bscTestnet.id]: http(),
+    [bsc.id]: http(
+      "https://rpc.ankr.com/bsc/7a27876214d22119ec2a70f6adb115e7eb45ede20a30f49f945cfcd5563e5a3b"
+    ),
+    // [bscTestnet.id]: http(),
   },
 });
 

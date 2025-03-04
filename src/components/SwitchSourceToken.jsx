@@ -37,7 +37,7 @@ function SwitchSourceToken({ width, switchToken, setSwitchToken }) {
           <>
             <Menu.Button
               className={clsx(
-                "flex gap-2 items-center p-1 pr-2.5 rounded-full text-sm w-[130px] font-medium border border-gray-400 transition-colors hover:bg-dark-300",
+                "flex gap-2 items-center p-1 pr-2.5 rounded-full text-sm w-[160px] font-medium border border-gray-400 transition-colors hover:bg-dark-300",
                 width === "full" && "w-full",
                 open ? "bg-dark-300" : "bg-dark-400"
               )}
@@ -71,7 +71,7 @@ function SwitchSourceToken({ width, switchToken, setSwitchToken }) {
               leaveFrom="transform scale-100 opacity-100"
               leaveTo="transform scale-95 opacity-0"
             >
-              <Menu.Items className="absolute right-0 z-10 w-56 py-1 mt-2 origin-top-right border rounded-md shadow-lg bg-dark-400 border-dark-300 ring-1 ring-black ring-opacity-5 focus:outline-none">
+              <Menu.Items className="absolute right-0 z-10 w-[160px] py-1 mt-2 origin-top-right border rounded-md shadow-lg bg-dark-400 border-dark-300 ring-1 ring-black ring-opacity-5 focus:outline-none">
                 {tokensSelector.map((x, index) => (
                   <Menu.Item key={x.name}>
                     <button

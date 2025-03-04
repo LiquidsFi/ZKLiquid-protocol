@@ -1,6 +1,7 @@
 import {
   createBrowserRouter,
   createRoutesFromElements,
+  Navigate,
   Route,
   RouterProvider,
 } from "react-router-dom";
@@ -17,39 +18,42 @@ import NFT from "./pages/nft/NFT";
 
 import Trade from "./pages/swap/Trade";
 import Bridge from "./pages/swap/Bridge";
-import Liquidity from "./pages/liquidity/Liquidity";
+// import Liquidity from "./pages/liquidity/Liquidity";
+import Liquidity from "./pages/add-liquidity/Liquidity";
+import BonusRewardTab from "./components/ui/deposit/BonusRewardTab";
+import DepositsTab from "./components/ui/deposit/DepositsTab";
+import { SidebarContextProvider } from "./context/SidebarContext";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
+      {" "}
       <Route exact path="/" element={<Home />} errorElement={<ErrorPage />} />
       <Route path="/" element={<DashboardLayout />}>
-        <Route path="/swap">
-          <Route index element={<Trade />} />
-          <Route path="liquidity" element={<Liquidity />} />
-          <Route path="faucet" element={<Bridge />} />
-        </Route>
-        {/* <Route path="/liquidity">
+        <Route index element={<Navigate to="/bridge" />} />
+        <Route path="/bridge" element={<Trade />} />
+        <Route path="/liquidity">
           <Route index element={<Liquidity />} />
-        </Route> */}
-        <Route path="/defi">
-          <Route index element={<Dashboard />} />
-          <Route path="lend" element={<Lend />} />
-          <Route path="loans" element={<MyLoans />} />
         </Route>
-        <Route path="/gamefi">
-          <Route index element={<Gamefi />} />
+        <Route path="/loans">
+          <Route index element={<div>Loans page</div>} />
         </Route>
-        <Route path="/nft">
-          <Route index element={<NFT />} />
+        <Route path="/rewards">
+          <Route index element={<div>Rewards page</div>} />
         </Route>
+
+        <Route path="/faucet" element={<Bridge />} />
       </Route>
     </>
   )
 );
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <SidebarContextProvider>
+      <RouterProvider router={router} />
+    </SidebarContextProvider>
+  );
 }
 
 export default App;

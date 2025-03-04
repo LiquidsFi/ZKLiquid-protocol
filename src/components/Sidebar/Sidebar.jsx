@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { XMarkIcon } from "@heroicons/react/24/solid";
 import { Link } from "react-router-dom";
 import logo from "../../assets/images/ZKLiquidIcon.svg";
+import sidebarLinks from "../../constant/sidebarLinks";
 
 import logoText from "../../assets/images/logotext.svg";
 import { useContext } from "react";
@@ -72,7 +73,15 @@ function Sidebar({ currentPageLinks }) {
           </Link>
 
           <div className="space-y-2.5 mt-3">
-            {currentPageLinks.links.map((link) =>
+            {/* {currentPageLinks?.links.map((link) =>
+              link.hasOwnProperty("children") ? (
+                <SidebarDropdown link={link} key={link.title} />
+              ) : (
+                <SidebarLink link={link} key={link.title} />
+              )
+            )} */}
+
+            {sidebarLinks.map((link) =>
               link.hasOwnProperty("children") ? (
                 <SidebarDropdown link={link} key={link.title} />
               ) : (

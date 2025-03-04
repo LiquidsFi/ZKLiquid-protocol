@@ -14,10 +14,8 @@ import WalletButton from "./WalletButton";
 import SwitchNetworkDropdown from "./SwitchNetworkDropdown";
 import { AnimatePresence, motion } from "framer-motion";
 
-import sidebarLinks from "../constant/sidebarLinks.jsx";
-
 function Header() {
-  const { isOpen, setIsOpen, isXLM, setIsXLM, userPubKey } =
+  const { isOpen, setIsOpen, isXLM, setIsXLM, userPubKey, allChains } =
     useContext(SidebarContext);
   const [isMobilePopupOpen, setIsMobilePopupOpen] = useState(false);
   const { isConnected } = useAccount();
@@ -77,7 +75,7 @@ function Header() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-end justify-between ">
+          {/* <div className="flex items-end justify-between ">
             <div className="flex justify-start gap-1 p-1 border border-dark-200 rounded-full">
               <button
                 className={`text-[#FFFFFF] text-sm px-[15px] py-1 rounded-full font-bold ${
@@ -96,10 +94,10 @@ function Header() {
                 EVM
               </button>
             </div>
-          </div>
+          </div> */}
           <WalletButton />
-          {(isConnected && !isXLM) || (userPubKey && isXLM) ? (
-            <SwitchNetworkDropdown />
+          {isConnected || userPubKey ? (
+            <SwitchNetworkDropdown allChains={allChains} />
           ) : null}
         </div>
       </div>

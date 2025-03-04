@@ -1,11 +1,12 @@
 import { useState, useEffect, useContext, useCallback } from "react";
-import { ArrowDown2, ArrowRight, Repeat, Setting4 } from "iconsax-react";
-import { Operation, Soroban, xdr, sign } from "@stellar/stellar-sdk";
+import { InfoCircle, Repeat, Setting4 } from "iconsax-react";
+import { Soroban } from "@stellar/stellar-sdk";
 
 import { ClipLoader } from "react-spinners";
 
-import { erc20Abi, formatEther } from "viem";
+import { erc20Abi, formatUnits, parseEther, parseUnits } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
+
 import {
   writeContract,
   readContract,
@@ -15,14 +16,22 @@ import {
 import Button from "./Button";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { parseEther } from "viem";
+// import { parseEther } from "viem";
 import { useDebounce, useMediaQuery } from "usehooks-ts";
 
 import WalletsModal from "./WalletsModal";
 
 import poolContract from "../contracts/pool.json";
+import {
+  abi,
+  bridgeContracts,
+  oracleContracts,
+  tokenAddress,
+  chainIds,
+  native,
+} from "../contracts/contracts-details.json";
 import { config } from "../Wagmi";
-import SwitchNetworkDropdown from "./SwitchNetworkDropdownSwapcard";
+import SwitchNetworkDropdown from "../components/SwitchNetworkDropdown";
 import DestinationChainDropdown from "./DestinationChainDropdown";
 import {
   tokensSelector,
@@ -33,25 +42,25 @@ import DestinationToken from "./DestinationToken";
 
 import {
   BASE_FEE,
-  FUTURENET_DETAILS,
   depositToken,
-  getTokenInfo,
   getTxBuilder,
-  getWalletBalance,
-  kp,
   server,
   submitTx,
   transferPayout,
   transferToEVM,
   xlmToStroop,
+  STELLAR_SDK_SERVER_URL,
+  anyInvokeMainnet,
+  sendTransactionMainnet,
 } from "../freighter-wallet/soroban";
 import {
   getNetwork,
-  getUserInfo,
   setAllowed,
   signTransaction,
+  getAddress,
 } from "@stellar/freighter-api";
 import { SidebarContext } from "../context/SidebarContext";
+import axios from "axios";
 
 function SwapCard({
   setMessageId,
@@ -65,7 +74,6 @@ function SwapCard({
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   const { chain, address, isConnected } = useAccount();
-  const { chains } = useSwitchChain();
 
   const [amount, setAmount] = useState(null);
   const [recipientAddr, setRecipientAddr] = useState("");
@@ -78,12 +86,11 @@ function SwapCard({
   const poolAbi = poolContract.abi;
   const poolContracts = poolContract.contracts;
   const [selectedId, setSelectedId] = useState();
+
+  const [totalDebitedAmount, setTotalDebitedAmount] = useState(null);
+  const [bridgeFee, setBridgeFee] = useState(null);
+
   const [switchToken, setSwitchToken] = useState(tokensSelector[0]);
-  const [XLMbalance, setXLMbalance] = useState(0);
-
-  // Storage key is the connected address
-
-  console.log("seledted id is", selectedId);
 
   const STORAGE_KEY = address;
   const MAX_ITEMS = 5;
@@ -91,63 +98,219 @@ function SwapCard({
   const isMobile = useMediaQuery("(max-width: 375px)");
 
   const needApproval = parseFloat(curAllowance) < parseFloat(amount);
-  const selectedNetworkConfig = FUTURENET_DETAILS;
+
   const {
+    selectedSourceChain,
+    setSelectedSourceChain,
+    selectedDestinationChain,
+    setSelectedDestinationChain,
     isXLM,
     userPubKey,
     setUserPubKey,
     selectedNetwork,
+    allChains,
     setSelectedNetwork,
     freighterConnecting,
   } = useContext(SidebarContext);
 
+  console.log("total debit amount", totalDebitedAmount);
+
+  // console.log("selected source chain", selectedSourceChain?.id);
+
   useEffect(() => {
-    //  ' AAAAAAACZWcAAAAAAAAAAQAAAAAAAAAYAAAAAHkiNRBxttGjG0hV0BXrHw1bFyHDyNsgl6jmXslrdsBbAAAAAA=='
-    async function fetchTransactionData() {
-      let txResponse = await server.getTransaction(
-        "8f8fce68d14c6a302d06cb767f419c2170cca90b33b213bc9443f6bbbe9e75ae"
-      );
-      console.log("this is the transaction data", txResponse);
+    async function fetchAccount() {
+      const network = await getNetwork();
+      const account = (await getAddress()).address;
+      setUserPubKey(account);
+      setSelectedNetwork(network);
     }
-    fetchTransactionData();
+    fetchAccount();
   }, []);
-
-  useEffect(() => {
-    async function fetchBalance() {
-      const txBuilder = await getTxBuilder(
-        userPubKey,
-        BASE_FEE,
-        server,
-        selectedNetworkConfig.networkPassphrase
-      );
-
-      const res = await getWalletBalance({
-        tokenId: switchToken[2024],
-        userPubKey: userPubKey,
-        txBuilderBalance: txBuilder,
-        server: server,
-      });
-
-      setXLMbalance(() => res);
-    }
-    if (userPubKey) {
-      fetchBalance();
-    }
-  }, [isXLM, userPubKey]);
 
   useEffect(() => {
     async function fetchConnection() {
       const isAllowed = await setAllowed();
-      const publicKey = await getUserInfo();
+      const publicKey = await getAddress();
       const nt = await getNetwork();
-      setUserPubKey(() => publicKey.publicKey);
+      setUserPubKey(() => publicKey.address);
       setSelectedNetwork(() => nt);
     }
     fetchConnection();
   }, [freighterConnecting, selectedId, userPubKey]);
+  // console.log("the user public key is", selectedSourceChain?.id);
 
-  // console.log("the selected network is ", selectedNetwork);
-  // console.log("the selected network is ", userPubKey);
+  useEffect(() => {
+    async function fetchBalance() {
+      const body = {
+        pubKey: userPubKey,
+        fee: BASE_FEE,
+        networkPassphrase: selectedNetwork?.networkPassphrase,
+        contractId: tokenAddress.USDC[1200],
+        operation: "balance",
+        args: [{ type: "Address", value: userPubKey }],
+      };
+
+      const response = await axios.post(
+        `${STELLAR_SDK_SERVER_URL}/simulateTransaction`,
+        body,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const amount = Soroban.formatTokenAmount(response?.data?.data, 7);
+
+      console.log("stellar chain balance", amount);
+
+      setBalance(() => amount);
+    }
+    if (userPubKey && selectedSourceChain?.id === 1200) {
+      fetchBalance();
+    }
+  }, [userPubKey, selectedNetwork, selectedSourceChain]);
+
+  useEffect(() => {
+    async function fetchBridgeFeeXLM() {
+      console.log("THIS RAN");
+      const body = {
+        pubKey: userPubKey,
+        fee: BASE_FEE,
+        networkPassphrase: selectedNetwork?.networkPassphrase,
+        contractId: bridgeContracts[1200],
+        operation: "get_bridge_fee",
+        args: [],
+      };
+
+      const response = await axios.post(
+        `${STELLAR_SDK_SERVER_URL}/simulateTransaction`,
+        body,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const fee = Soroban.formatTokenAmount(response?.data?.data, 7);
+
+      const receivedFee = JSON.parse(fee, (key, value) =>
+        /^\d+$/.test(value) ? BigInt(value) : value
+      );
+
+      const actualFee = formatUnits(receivedFee?.rate, 7);
+
+      setBridgeFee(actualFee);
+
+      // console.log("actual fee", actualFee);
+
+      // setBalance(() => amount);
+    }
+    if (
+      userPubKey &&
+      selectedSourceChain?.id === 1200 &&
+      amount &&
+      selectedDestinationChain?.id
+    ) {
+      fetchBridgeFeeXLM();
+    }
+
+    async function fetchTotalDebitAmountXLM() {
+      const body = {
+        pubKey: userPubKey,
+        fee: BASE_FEE,
+        networkPassphrase: selectedNetwork?.networkPassphrase,
+        contractId: bridgeContracts[1200],
+        operation: "get_total_debit_at_transfer",
+        args: [
+          { type: "Address", value: tokenAddress.USDC[1200] },
+          { type: "i128", value: amount },
+        ],
+      };
+
+      const response = await axios.post(
+        `${STELLAR_SDK_SERVER_URL}/simulateTransaction`,
+        body,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const debitAmount = Soroban.formatTokenAmount(response?.data?.data, 7);
+      if (!amount) {
+        setTotalDebitedAmount(null);
+      } else {
+        setTotalDebitedAmount(debitAmount);
+      }
+    }
+
+    if (userPubKey && selectedSourceChain?.id === 1200 && amount) {
+      fetchTotalDebitAmountXLM();
+    }
+  }, [
+    amount,
+    userPubKey,
+    selectedNetwork,
+    selectedSourceChain,
+    selectedDestinationChain,
+  ]);
+  useEffect(() => {
+    async function fetchBridgeFeeEVM() {
+      const bridgeFee = await readContract(config, {
+        abi: abi,
+        address: bridgeContracts[selectedSourceChain?.id],
+        functionName: "bridgeFee",
+      });
+
+      setBridgeFee(formatUnits(bridgeFee, 18));
+      // console.log("bridge fee", formatUnits(bridgeFee, 18));
+    }
+    if (
+      address &&
+      selectedSourceChain?.id !== 1200 &&
+      amount &&
+      selectedDestinationChain?.id
+    ) {
+      fetchBridgeFeeEVM();
+    }
+
+    async function fetchTotalAmountEVM() {
+      const fees = await readContract(config, {
+        abi: abi,
+        address: bridgeContracts[selectedSourceChain?.id],
+        functionName: "liquidityFeeRate",
+        args: [tokenAddress.USDC[selectedSourceChain?.id]],
+      });
+
+      const tokenDecimal = await readContract(config, {
+        abi: erc20Abi,
+        address: tokenAddress.USDC[selectedSourceChain?.id],
+        functionName: "decimals",
+      });
+
+      setTotalDebitedAmount(
+        Number(formatUnits(fees[0], tokenDecimal)) +
+          (Number(amount) * Number(fees[1])) / 100000
+      );
+    }
+    if (
+      address &&
+      selectedSourceChain?.id !== 1200 &&
+      amount &&
+      selectedDestinationChain?.id
+    ) {
+      fetchTotalAmountEVM();
+    }
+  }, [
+    amount,
+    address,
+    selectedNetwork,
+    selectedSourceChain,
+    selectedDestinationChain,
+  ]);
 
   async function handlePaste() {
     try {
@@ -162,7 +325,7 @@ function SwapCard({
 
   const formatBalance = (number, decimal) => {
     if (number == undefined) {
-      return number;
+      return;
     }
 
     const decimals = number.toString().split(".")[1];
@@ -173,57 +336,6 @@ function SwapCard({
     }
   };
 
-  // useEffect(() => {
-  //   async function handleTransferPayout() {
-  //     const amount = Soroban.parseTokenAmount("1000", 7);
-
-  //     const txBuiderOracle = await getTxBuilder(
-  //       "GBD7AM5MWWPJTIN2NBJKYLTB342P46QRO3Q7LDJXW3LJSZZSEKALSF76",
-  //       xlmToStroop(100).toString(),
-  //       server,
-  //       selectedNetworkConfig.networkPassphrase
-  //     );
-
-  //     const res = await transferPayout({
-  //       poolContract:
-  //         "CDKPP6KCCAPGFZNOWSAQQXHKCWXRXI33QGTVZG4MUURVAIPUSQLGZVJ5",
-  //       to: "GCEL4E3OBFLW6VRDC373RIQ2ICP2ZLV3DQZRVSNUOSWFECB7RRWUVYDL",
-  //       token_address:
-  //         "CCMJ4KRNRUUO3SA36RPVXLSP364CSTTFUHLM5U767UCXTAQIE4SBYAA5",
-  //       amount: amount,
-  //       memo: "transfer payout",
-  //       txBuilderAdmin: txBuiderOracle,
-  //       server: server,
-  //     });
-
-  //     console.log("transfer payout", res);
-  //   }
-  //   handleTransferPayout();
-  // }, []);
-
-  async function oracleCallHandler(amountSent, to) {
-    const amount = Soroban.parseTokenAmount(amountSent, 7);
-
-    const txBuiderOracle = await getTxBuilder(
-      "GBD7AM5MWWPJTIN2NBJKYLTB342P46QRO3Q7LDJXW3LJSZZSEKALSF76",
-      xlmToStroop(100).toString(),
-      server,
-      selectedNetworkConfig.networkPassphrase
-    );
-
-    const res = await transferPayout({
-      poolContract: "CDKPP6KCCAPGFZNOWSAQQXHKCWXRXI33QGTVZG4MUURVAIPUSQLGZVJ5",
-      to: to,
-      token_address: "CCMJ4KRNRUUO3SA36RPVXLSP364CSTTFUHLM5U767UCXTAQIE4SBYAA5",
-      amount: amount,
-      memo: "transfer payout",
-      txBuilderAdmin: txBuiderOracle,
-      server: server,
-    });
-
-    // console.log("transfer payout", res);
-  }
-
   async function handleDepositTokenXLM() {
     const amount = Soroban.parseTokenAmount("1000", 7);
 
@@ -231,7 +343,7 @@ function SwapCard({
       "GBD7AM5MWWPJTIN2NBJKYLTB342P46QRO3Q7LDJXW3LJSZZSEKALSF76",
       xlmToStroop(100).toString(),
       server,
-      selectedNetworkConfig.networkPassphrase
+      selectedNetwork?.networkPassphrase
     );
 
     const xdr = await depositToken({
@@ -250,7 +362,7 @@ function SwapCard({
 
     const result = await submitTx(
       signature,
-      selectedNetworkConfig.networkPassphrase,
+      selectedNetwork?.networkPassphrase,
       server
     );
 
@@ -264,7 +376,7 @@ function SwapCard({
       userPubKey,
       xlmToStroop(100).toString(),
       server,
-      selectedNetworkConfig.networkPassphrase
+      selectedNetwork?.networkPassphrase
     );
 
     const xdr = await transferToEVM({
@@ -284,169 +396,223 @@ function SwapCard({
 
     const result = await submitTx(
       signature,
-      selectedNetworkConfig.networkPassphrase,
+      selectedNetwork?.networkPassphrase,
       server
     );
 
     // console.log("deposit confirmed", result);
   }
 
-  const spender = poolContracts[chain?.id];
-
-  useEffect(() => {
-    async function fetchBalance(addr) {
-      const result = await readContract(config, {
-        chainId: chain?.id,
-        abi: erc20Abi,
-        address: switchToken[chain?.id],
-        functionName: "balanceOf",
-        args: [addr],
-      });
-      setBalance(() => formatEther(result));
-    }
-    if (address) {
-      fetchBalance(address);
-    }
-  }, [address, chain, switchToken, isTransfer]);
-
-  useEffect(() => {
-    if (!address) {
-      return;
-    }
-
-    async function fetchAllowance(addr) {
-      const result = await readContract(config, {
-        chainId: chain?.id,
-        abi: erc20Abi,
-        address: switchToken[chain?.id],
-        functionName: "allowance",
-        args: [addr, spender],
-      });
-
-      setCurAllowance(() => formatEther(result));
-    }
-
-    async function fetchBalance(addr) {
-      const balRes = await readContract(config, {
-        chainId: chain?.id,
-        abi: erc20Abi,
-        address: switchToken[chain?.id],
-        functionName: "balanceOf",
-        args: [addr],
-      });
-    }
-
+  async function handleTransferFromXLM() {
+    setIsProcessing(true);
     try {
-      fetchAllowance(address);
+      const args = [
+        { type: "Address", value: userPubKey },
+        { type: "u32", value: chainIds[selectedDestinationChain?.id] },
+        { type: "string", value: recipientAddr },
+        { type: "Address", value: tokenAddress.USDC[1200] },
+        { type: "i128", value: amount },
+      ];
 
-      fetchBalance(address);
-    } catch (e) {}
-  }, [address, chain, switchToken, isProcessing]);
+      console.log(args);
+
+      const resSign = await anyInvokeMainnet(
+        userPubKey,
+        BASE_FEE,
+        selectedNetwork?.networkPassphrase,
+        oracleContracts[1200],
+        "initiate_outgoing_transfer",
+        args,
+        "transfer to evm"
+      );
+
+      const res = await sendTransactionMainnet(
+        resSign?.signedTxXdr,
+        selectedNetwork?.networkPassphrase
+      );
+      const trxData = {
+        amount: amount,
+        from: selectedSourceChain?.id,
+        to: selectedDestinationChain?.id,
+        name: "USDC",
+        id: res?.txHash,
+        time: new Date().toLocaleDateString(),
+      };
+
+      saveTransferData(trxData);
+
+      setMessageId(res?.txHash);
+      console.log("transfer res", res);
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  // const spender = poolContracts[chain?.id];
+  const spender = "0x0310b89bbE853440266BdA3f3878F54497565601";
 
   useEffect(() => {
-    async function awaitTransactionConfirmation(hashIn) {
-      const confirmHash = await waitForTransactionReceipt(config, {
-        chainId: chain.id,
-        hash: trxHash,
+    async function fetchBalance(addr) {
+      const tokenDecimal = await readContract(config, {
+        abi: erc20Abi,
+        address: tokenAddress.USDC[selectedSourceChain?.id],
+        functionName: "decimals",
       });
 
-      // console.log("the block hash is", confirmHash);
-      const msgId =
-        confirmHash.logs.length > 5
-          ? confirmHash.logs.at(5).topics.at(1)
-          : confirmHash.logs.at(-1).topics.at(1);
+      const result = await readContract(config, {
+        abi: erc20Abi,
+        address: tokenAddress.USDC[selectedSourceChain?.id],
+        functionName: "balanceOf",
+        args: [addr],
+        account: addr,
+      });
 
-      setIsProcessing(() => false);
-      if (isTransfer) {
-        setMessageId(() => msgId);
-        setAmount(() => 0);
-        setSelectedId();
-        setRecipientAddr(() => address);
-        const trxData = {
-          // details: `${amount} ${switchToken.name}: ${chain.name} to ${
-          //   chains.find((chain) => chain.id === selectedId).name // Assuming each chain object has a name property
-          // }`,
-          amount: amount,
-          from: isXLM ? 2024 : chain.id,
-          to: selectedId,
-          name: switchToken.name,
-          id: msgId,
-          time: new Date().toLocaleDateString(),
-        };
-        // setTransferData(() => ({
-        //   details: `${amount} ${switchToken.name}: ${chain.name} to ${
-        //     chains.find((chain) => chain.id === selectedId).name // Assuming each chain object has a name property
-        //   }`,
-        //   id: confirmHash.logs.at(-1).topics.at(1), // Use the same value as for setting messageId
-        // }));
-
-        saveTransferData(trxData);
-      }
-
-      setIsTransfer(false);
+      console.log("balance result", formatUnits(result, tokenDecimal));
+      setBalance(() => formatUnits(result, tokenDecimal));
     }
-
-    if (trxHash !== "") {
-      awaitTransactionConfirmation(trxHash);
+    if (selectedSourceChain && address && selectedSourceChain?.id !== 1200) {
+      fetchBalance(address);
     }
-  }, [trxHash]);
+  }, [address, chain, selectedSourceChain, isTransfer]);
+
+  // useEffect(() => {
+  //   async function awaitTransactionConfirmation(hashIn) {
+  //     const confirmHash = await waitForTransactionReceipt(config, {
+  //       chainId: chain.id,
+  //       hash: trxHash,
+  //     });
+
+  //     // console.log("the block hash is", confirmHash);
+  //     const msgId =
+  //       confirmHash.logs.length > 5
+  //         ? confirmHash.logs.at(5).topics.at(1)
+  //         : confirmHash.logs.at(-1).topics.at(1);
+
+  //     setIsProcessing(() => false);
+  //     if (isTransfer) {
+  //       setMessageId(() => msgId);
+  //       setAmount(() => 0);
+  //       setSelectedId();
+  //       setRecipientAddr(() => address);
+  //       const trxData = {
+  //         // details: `${amount} ${switchToken.name}: ${chain.name} to ${
+  //         //   chains.find((chain) => chain.id === selectedId).name // Assuming each chain object has a name property
+  //         // }`,
+  //         amount: amount,
+  //         from: isXLM ? 2024 : chain.id,
+  //         to: selectedId,
+  //         name: switchToken.name,
+  //         id: msgId,
+  //         time: new Date().toLocaleDateString(),
+  //       };
+  //       // setTransferData(() => ({
+  //       //   details: `${amount} ${switchToken.name}: ${chain.name} to ${
+  //       //     chains.find((chain) => chain.id === selectedId).name // Assuming each chain object has a name property
+  //       //   }`,
+  //       //   id: confirmHash.logs.at(-1).topics.at(1), // Use the same value as for setting messageId
+  //       // }));
+
+  //       saveTransferData(trxData);
+  //     }
+
+  //     setIsTransfer(false);
+  //   }
+
+  //   if (trxHash !== "") {
+  //     awaitTransactionConfirmation(trxHash);
+  //   }
+  // }, [trxHash]);
 
   async function handleApprove() {
     setIsProcessing(() => true);
+    let ethQuantity = "";
+    if (selectedSourceChain?.id?.toString() === "4200") {
+      ethQuantity = parseUnits(amount, 6);
+    } else if (selectedSourceChain?.id?.toString() === "3200") {
+      ethQuantity = parseUnits(amount, 18);
+    }
     const res = await writeContract(config, {
-      chainId: chain?.id,
       abi: erc20Abi,
-      address: switchToken[chain?.id],
+      address: tokenAddress.USDC[selectedSourceChain?.id],
       functionName: "approve",
-      args: [spender, parseEther(amount.toString())],
+      args: [bridgeContracts[selectedSourceChain?.id], ethQuantity],
     });
     setTrxHash(() => res);
+  }
+
+  async function handleTransferTokens() {
+    if (selectedSourceChain?.id?.toString() === "1200") {
+      await handleTransferFromXLM();
+    } else {
+      await handleTransferToXLM();
+    }
+  }
+
+  async function awaitTransactionConfirmation(hashIn) {
+    const confirmHash = await waitForTransactionReceipt(config, {
+      hash: hashIn,
+    });
+
+    return confirmHash;
   }
 
   async function handleTransferToXLM() {
     setIsProcessing(() => true);
-    const res = await writeContract(config, {
-      chainId: chain?.id,
-      abi: erc20Abi,
-      address: switchToken[chain?.id],
-      functionName: "transfer",
-      args: [
-        "0x3D356Ed57d221402417e93A7B5686F4ca0fd1263",
-        parseEther(amount.toString()),
-      ],
-    });
-    setTrxHash(() => res);
-
-    await oracleCallHandler(amount, recipientAddr);
-  }
-  const receiverContract = poolContracts[selectedId];
-  function handleTransfer() {
-    async function sendFxn() {
-      const result = await writeContract(config, {
-        chainId: chain?.id,
-        abi: poolAbi,
-        address: spender,
-        functionName: "sendTokenPayLINK",
-        args: [
-          destinationSelectors[selectedId].toString(),
-          receiverContract,
-          switchToken[chain?.id],
-          parseEther(amount.toString()), //ammount
-          recipientAddr, //recipient
-        ],
-      });
-
-      setTrxHash(() => result);
-    }
 
     try {
-      setIsTransfer(() => true);
-      setIsProcessing(() => true);
-      sendFxn();
+      const bridgeFee = await readContract(config, {
+        abi: abi,
+        address: bridgeContracts[selectedSourceChain?.id],
+        functionName: "bridgeFee",
+      });
+
+      let ethQuantity = "";
+      if (chainIds[selectedSourceChain.id].toString() === "4200") {
+        ethQuantity = parseUnits(amount.toString(), 6);
+      } else if (chainIds[selectedSourceChain.id].toString() === "3200") {
+        ethQuantity = parseUnits(amount, 18);
+      }
+
+      const tx = await writeContract(config, {
+        abi: abi,
+        address: bridgeContracts[selectedSourceChain?.id],
+        functionName: "outgoingTransfer",
+        args: [
+          chainIds[selectedDestinationChain?.id],
+          recipientAddr,
+          tokenAddress.USDC[selectedSourceChain?.id],
+          ethQuantity,
+          false,
+        ],
+        value: bridgeFee,
+      });
+
+      const res = await awaitTransactionConfirmation(tx);
+      setTrxHash(() => res);
+
+      console.log("response", res?.transactionHash);
+
+      const trxData = {
+        amount: amount,
+        from: selectedSourceChain?.id,
+        to: selectedDestinationChain?.id,
+        name: "USDC",
+        id: res?.transactionHash,
+        time: new Date().toLocaleDateString(),
+      };
+
+      saveTransferData(trxData);
+
+      setMessageId(res?.transactionHash);
     } catch (e) {
-      setIsProcessing(() => false);
+      console.log(e);
+    } finally {
+      setIsProcessing(false);
     }
   }
+  const receiverContract = poolContracts[selectedId];
 
   function saveTransferData(newData) {
     let data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -463,9 +629,12 @@ function SwapCard({
     setAmount(() => balance);
   }
 
+  // useEffect(() => {
+  //   localStorage.clear();
+  // }, []);
   return (
     <>
-      <div className="p-4 bg-[#04131F]  md:p-6 rounded-xl ">
+      <div className="p-4  bg-[#04131F]  md:p-6 rounded-xl ">
         <div className="grid grid-cols-3">
           <div aria-hidden="true">&nbsp;</div>
           <h3 className="text-xl font-bold text-center text-2">Swap/Bridge</h3>
@@ -476,13 +645,16 @@ function SwapCard({
           </div>
         </div>
 
-        <div className="flex items-end justify-between mt-4">
-          <div className="flex flex-col items-start space-y-3">
+        <div className="flex items-end justify-between mt-4 ">
+          <div className="flex flex-col w-full items-start space-y-3 ">
             <p className="text-sm font-medium text-dark-100">From</p>
 
             {isConnected && (
-              <div className="flex items-end gap-4 ">
-                <SwitchNetworkDropdown isMobile={isMobile} />
+              <div className="flex items-end justify-between  w-full ">
+                <SwitchNetworkDropdown
+                  isMobile={isMobile}
+                  allChains={allChains}
+                />
 
                 <SwitchSourceToken
                   switchToken={switchToken}
@@ -490,32 +662,51 @@ function SwapCard({
                 />
               </div>
             )}
-            <input
-              onChange={(e) => setAmount(e.target.value)}
-              type="number"
-              className="w-full text-xl font-bold text-white bg-transparent border-0 outline-none md:text-3xl placeholder:text-dark-200"
-              placeholder="0.00"
-              value={!!amount && formatBalance(amount, 8)}
-            />
-            <button
-              className="text-sm font-semibold text-white uppercase"
-              onClick={handleMax}
-            >
-              Max
-            </button>
-          </div>
+            <div className="flex justify-between items-center w-full ">
+              {" "}
+              <input
+                onChange={(e) => setAmount(e.target.value)}
+                type="number"
+                className="w-2/3 text-xl font-bold  text-white bg-transparent border-0 outline-none md:text-3xl placeholder:text-dark-200"
+                placeholder="0.00"
+                // value={!!amount && formatBalance(amount, 8)}
+              />
+              {totalDebitedAmount && (
+                <div className="text-green-500 flex gap-2 rounded-lg px-2">
+                  <span>
+                    {Number(totalDebitedAmount)?.toFixed(2)} {"USDC"}
+                  </span>
+                  <InfoCircle className="w-5 h-auto text-gray-400" />
+                </div>
+              )}
+              {/* {true && (
+                <div className=" text-green-500 flex gap-2 rounded-lg px-2">
+                  5.05 USDC
+                  <InfoCircle className="w-5 h-auto text-gray-400" />
+                </div>
+              )} */}
+            </div>
 
-          <div className="flex-shrink-0 space-y-2 text-right">
-            {balance && (
-              <p className="text-xs font-medium md:text-sm text-gray-200">
-                Balance: {isXLM ? XLMbalance : formatBalance(balance, 2)}{" "}
-                {switchToken.name}
-              </p>
-            )}
+            <div className="flex justify-between items-center w-full">
+              {" "}
+              <button
+                className="text-sm font-semibold text-white uppercase"
+                onClick={handleMax}
+              >
+                Max
+              </button>
+              <div className="flex-shrink-0 space-y-2 text-right ">
+                {
+                  <p className="text-xs font-medium md:text-sm text-gray-200">
+                    Balance: {Number(balance)?.toFixed(2)} {switchToken.name}
+                  </p>
+                }
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="my-3  relative text-center after:content-[''] after:absolute after:left-0 after:right-0 after:top-1/2 after:-translate-y-1/2 after:h-px after:bg-dark-300 af">
+        <div className="my-3   relative text-center after:content-[''] after:absolute after:left-0 after:right-0 after:top-1/2 after:-translate-y-1/2 after:h-px after:bg-dark-300 af">
           <button
             className="relative z-10 p-1 rounded-lg bg-dark-300 hover:bg-dark-300/50"
             // onClick={switchTokensHandler}
@@ -524,12 +715,13 @@ function SwapCard({
           </button>
         </div>
 
-        <div className="flex items-end justify-between mt-4">
-          <div className="flex flex-col items-start space-y-3">
+        <div className="flex   items-end justify-between mt-4">
+          <div className="flex w-full  flex-col items-start space-y-3">
             <p className="text-sm font-medium text-dark-100">To</p>
             {isConnected && (
-              <div className="flex items-end gap-4 ">
+              <div className="flex w-full  items-end justify-between ">
                 <DestinationChainDropdown
+                  allChains={allChains}
                   selectedId={selectedId}
                   setSelectedId={setSelectedId}
                   isMobile={isMobile}
@@ -538,18 +730,20 @@ function SwapCard({
                 <DestinationToken switchToken={switchToken} />
               </div>
             )}
-            <input
+            <div
               disabled={true}
               type="number"
               className="w-full text-xl font-bold text-white bg-transparent border-0 outline-none md:text-3xl placeholder:text-dark-200"
               placeholder="0.00"
               // disabled={true}
-              value={!!amount && formatBalance(amount, 8)}
+              // value={amount}
               // onChange={(e) => getEstimatedSwapData(e.target.value)}
-            />
+            >
+              {amount ? amount : "0.00"}
+            </div>
           </div>
         </div>
-        {selectedId && amount > 0 && (
+        {selectedDestinationChain && amount > 0 && (
           <div className=" w-full mt-5">
             <div className="relative   ">
               <div className="absolute -inset-x-2 -inset-y-5"></div>
@@ -561,7 +755,7 @@ function SwapCard({
                   name=""
                   id=""
                   placeholder="Paste recipient here"
-                  className="block w-full px-5 h-[50px] text-lg font-normal text-black placeholder-gray-600 bg-white border border-gray-300 rounded-xl focus:border-black focus:ring-1 focus:ring-black font-pj focus:outline-none"
+                  className="block w-full px-2 h-[45px] text-sm font-normal text-black placeholder-gray-800 bg-gray-300 border  rounded-sm focus:border-black focus:ring-1 focus:ring-black font-pj focus:outline-none"
                   value={recipientAddr}
                 />
 
@@ -570,7 +764,7 @@ function SwapCard({
                   onClick={handlePaste}
                 >
                   <svg
-                    className="h-10 w-auto "
+                    className="h-6 w-auto "
                     viewBox="0 0 48 48"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
@@ -582,34 +776,32 @@ function SwapCard({
                   </svg>
                 </div>
               </div>
+
+              <div className="flex relative mt-4 font-semibold justify-between items-center w-full ">
+                {" "}
+                {true && (
+                  <div className=" text-gray-300 flex gap-2 rounded-lg px-2">
+                    <div className=""> Bridge Fee:</div>{" "}
+                    <InfoCircle className="w-5 h-auto text-gray-300" />
+                  </div>
+                )}
+                {bridgeFee ? (
+                  <div className="text-green-500">
+                    {Number(bridgeFee)?.toFixed(4)}{" "}
+                    {native[selectedSourceChain?.id]}
+                  </div>
+                ) : (
+                  <ClipLoader
+                    size={20}
+                    color={"#9ca3af "}
+                    loading={true}
+                    className="relative top-[3px] text-gray-400 "
+                  />
+                )}
+              </div>
             </div>
           </div>
         )}
-
-        {/* {isSwapLoading && (
-          <div className="flex justify-center py-8">
-            <svg
-              className="mr-3 -ml-1 text-white animate-spin h-9 w-9"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-          </div>
-        )} */}
 
         <div className="mt-6">
           {(isConnected && !isXLM) || (userPubKey && isXLM) ? (
@@ -631,14 +823,18 @@ function SwapCard({
               </Button>
             ) : (
               <Button
-                disabled={!amount || !selectedId}
-                onClick={
-                  isXLM
-                    ? handleTransferXLM
-                    : selectedId === 2024
-                    ? handleTransferToXLM
-                    : handleTransfer
+                disabled={
+                  !amount || !selectedDestinationChain || !selectedSourceChain
                 }
+                // onClick={
+                //   isXLM
+                //     ? handleTransferXLM
+                //     : selectedId === 2024
+                //     ? handleTransferToXLM
+                //     : handleTransfer
+                // }
+
+                onClick={handleTransferTokens}
               >
                 Transfer Now
               </Button>

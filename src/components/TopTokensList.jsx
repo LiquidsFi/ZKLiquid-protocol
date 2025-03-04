@@ -23,15 +23,13 @@ function TopTokensList({ onTokenSelect, transactionData }) {
   };
 
   return (
-    <div className="pt-5">
+    <div className=" ">
       <div className="flex items-end justify-between ">
-        <div className="flex justify-start gap-2 p-1 font-bold text-lg ">
+        <div className="flex justify-start gap-2 p-1 font-bold text-lg  ">
           Latest Transactions
         </div>
         {/* {isTokenList && <SearchBar onChangeKeyword={onChangeKeyword} />} */}
       </div>
-
-      <div className="border border-b-[1px] border-[#20212C] my-0"></div>
 
       <div className="py-1 font-Roboto max-h-[754px] bg-[#191A1F] rounded-xl pb-10">
         {isConnected ? (

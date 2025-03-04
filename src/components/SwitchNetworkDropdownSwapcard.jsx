@@ -42,7 +42,7 @@ function SwitchNetworkDropdown({ width, isMobile }) {
         <>
           <Menu.Button
             className={clsx(
-              "flex gap-2 items-center p-1 pr-2.5 rounded-full text-sm w-full lg:w-[185px] font-medium border border-gray-400 transition-colors hover:bg-dark-300",
+              "flex gap-2 items-center p-1 pr-2.5 rounded-full text-sm w-full lg:w-[300px] font-medium border border-gray-400 transition-colors hover:bg-dark-300",
               width === "full" && "w-full",
               open ? "bg-dark-300" : "bg-dark-400"
             )}
@@ -117,7 +117,7 @@ function SwitchNetworkDropdown({ width, isMobile }) {
             leaveFrom="transform scale-100 opacity-100"
             leaveTo="transform scale-95 opacity-0"
           >
-            <Menu.Items className="absolute right-0 z-10 w-56 py-1 mt-2 origin-top-right border rounded-md shadow-lg bg-dark-400 border-dark-300 ring-1 ring-black ring-opacity-5 focus:outline-none">
+            <Menu.Items className="absolute right-0 z-10 w-[300px] py-1 mt-2 origin-top-right border rounded-md shadow-lg bg-dark-400 border-dark-300 ring-1 ring-black ring-opacity-5 focus:outline-none">
               {allChains.map((x) => (
                 <Menu.Item key={x.id}>
                   <button
@@ -125,7 +125,7 @@ function SwitchNetworkDropdown({ width, isMobile }) {
                     // onClick={() => switchChain?.(x.id)}
                     onClick={() => switchChain({ chainId: x.id })}
                     className={clsx(
-                      "px-4 py-2 text-sm transition-colors flex items-center gap-2 w-full text-left hover:bg-dark-300",
+                      "px-4 py-2 text-sm transition-colors flex items-center gap-2 w-full  text-left hover:bg-dark-300",
                       !switchChain || (x.id === chain?.id && "!hidden")
                     )}
                   >

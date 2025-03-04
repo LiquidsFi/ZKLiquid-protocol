@@ -9,7 +9,7 @@
     --toastify-font-family: inherit;
   }
   .heading-primary {
-    @apply font-bold text-3xl text-white;
+    @apply font-bold text-2xl text-white;
   }
 
   body {
@@ -40,6 +40,6 @@ input::-webkit-inner-spin-button {
 }
 
 /* Firefox */
-input[type='number'] {
+input[type="number"] {
   -moz-appearance: textfield;
 }

@@ -5,37 +5,47 @@ import Sidebar from "../components/Sidebar";
 
 import Header from "../components/Header";
 import sidebarLinks from "../constant/sidebarLinks.jsx";
-import { SidebarContextProvider } from "../context/SidebarContext";
+import { SidebarContext } from "../context/SidebarContext";
 import { WagmiContext } from "../context/WagmiContext";
 
 function DashboardLayout() {
   const location = useLocation();
   const { isConnected, address } = useContext(WagmiContext);
 
-  // Set the default page (swap)
-  const [currentPageLinks, setCurrentPageLinks] = useState(sidebarLinks[0]);
+  const {
+    selectedSourceChain,
+    setSelectedSourceChain,
+    selectedDestinationChain,
+    setSelectedDestinationChain,
+    isXLM,
+    userPubKey,
+    setUserPubKey,
+    selectedNetwork,
+    allChains,
+    setSelectedNetwork,
+    freighterConnecting,
+  } = useContext(SidebarContext);
 
   useEffect(() => {
-    const currentPath = "/" + location.pathname.split("/")[1];
-
-    // filter links to get the current page
-    const currentLinks = sidebarLinks.find((link) => link.path === currentPath);
-
-    // set the current page
-    setCurrentPageLinks(currentLinks);
-  }, [location]);
+    if (!address && userPubKey) {
+      const selectedChain = allChains?.find((chain) => chain?.id === 1200);
+      setSelectedSourceChain(selectedChain);
+    } else if (address && !userPubKey) {
+      console.log("this should run");
+      const selectedChain = allChains?.find((chain) => chain?.id === 3200);
+      setSelectedSourceChain(selectedChain);
+    }
+  }, [address, userPubKey]);
 
   return (
-    <SidebarContextProvider>
-      <div className="flex bg-black min-h-app ">
-        <Sidebar currentPageLinks={currentPageLinks} />
-        <Header />
+    <div className="flex bg-black min-h-app ">
+      <Sidebar currentPageLinks={sidebarLinks} />
+      <Header />
 
-        <div className="px-4 py-6 xl:px-8 mt-12 lg:mt-[66px] md:pl-24 xl:pl-72 w-full">
-          <Outlet />
-        </div>
+      <div className="px-4 py-6 xl:px-8 mt-16  md:pl-24 xl:pl-72 w-full">
+        <Outlet />
       </div>
-    </SidebarContextProvider>
+    </div>
   );
 }
 

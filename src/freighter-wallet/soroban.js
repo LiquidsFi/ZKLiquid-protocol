@@ -3,14 +3,16 @@ import BigNumber from "bignumber.js";
 import {
   isAllowed,
   setAllowed,
+  signTransaction,
   requestAccess,
   getNetwork,
+  getPublicKey,
 } from "@stellar/freighter-api";
 
 import {
   TransactionBuilder,
   xdr,
-  SorobanRpc,
+  rpc,
   Networks,
   Contract,
   TimeoutInfinite,
@@ -25,6 +27,7 @@ import {
   Soroban,
   sign,
 } from "@stellar/stellar-sdk";
+import axios from "axios";
 
 const secret = "SCLQTNYINVRXY32WDORXTD2JMM6YPBIASP7DKHXVEZX47DWEYZPRY2HO";
 const contract_file = "contract path here";
@@ -32,14 +35,13 @@ const contract_file = "contract path here";
 export const kp = Keypair.fromSecret(secret);
 
 export const BASE_FEE = "100";
-export const FUTURENET_DETAILS = {
-  network: "FUTURENET",
-  networkUrl: "https://horizon-futurenet.stellar.org",
-  networkPassphrase: "Test SDF Future Network ; October 2022",
-};
+
+export const STELLAR_SDK_SERVER_URL = "https://stellar-sdk-server.sorobuild.io";
 
 export const RPC_URLS = {
   FUTURENET: "https://rpc-futurenet.stellar.org/",
+  PUBLIC:
+    "https://rpc.ankr.com/stellar_soroban/f476ee5dd085e5d78c7d981977f23ef68854db7b73bc55b96c564824c090fbc6",
 };
 
 export const accountToScVal = (account) => new Address(account).toScVal();
@@ -55,12 +57,9 @@ export const stroopToXlm = (stroops) => {
   return new BigNumber(Number(stroops) / 1e7);
 };
 
-const getServer = (networkDetails) =>
-  new SorobanRpc.Server(RPC_URLS[networkDetails.network], {
-    allowHttp: networkDetails.networkUrl.startsWith("http://"),
-  });
+const getServer = (network) => new rpc.Server(RPC_URLS[network]);
 
-export const server = getServer(FUTURENET_DETAILS);
+export const server = getServer("FUTURENET");
 
 export const getTxBuilder = async (pubKey, fee, server, networkPassphrase) => {
   const source = await server.getAccount(pubKey);
@@ -73,10 +72,7 @@ export const getTxBuilder = async (pubKey, fee, server, networkPassphrase) => {
 export const simulateTx = async (tx, server) => {
   const response = await server.simulateTransaction(tx);
 
-  if (
-    SorobanRpc.Api.isSimulationSuccess(response) &&
-    response.result !== undefined
-  ) {
+  if (rpc.Api.isSimulationSuccess(response) && response.result !== undefined) {
     return scValToNative(response.result.retval);
   }
 
@@ -315,7 +311,7 @@ export const getEstimatedFee = async (
 
   // console.log("sim response", simResponse);
 
-  if (SorobanRpc.Api.isSimulationError(simResponse)) {
+  if (rpc.Api.isSimulationError(simResponse)) {
     throw simResponse.error;
   }
 };
@@ -331,9 +327,7 @@ export const submitTx = async (signedXDR, networkPassphrase, server) => {
     let txResponse = await server.getTransaction(sendResponse.hash);
 
     // Poll this until the status is not "NOT_FOUND"
-    while (
-      txResponse.status === SorobanRpc.Api.GetTransactionStatus.NOT_FOUND
-    ) {
+    while (txResponse.status === rpc.Api.GetTransactionStatus.NOT_FOUND) {
       // See if the transaction is complete
       // eslint-disable-next-line no-await-in-loop
       txResponse = await server.getTransaction(sendResponse.hash);
@@ -342,7 +336,7 @@ export const submitTx = async (signedXDR, networkPassphrase, server) => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
-    if (txResponse.status === SorobanRpc.Api.GetTransactionStatus.SUCCESS) {
+    if (txResponse.status === rpc.Api.GetTransactionStatus.SUCCESS) {
       return txResponse.resultXdr.toXDR("base64");
     }
   }
@@ -357,9 +351,9 @@ export const ConnectWallet = async (setUserKey, setNetwork) => {
 
   try {
     const isAllowed = await setAllowed();
-    publicKey = await requestAccess();
+    publicKey = (await requestAccess()).address;
 
-    // console.log("user key is", publicKey);
+    console.log("user key is", publicKey);
 
     const nt = await getNetwork();
 
@@ -375,3 +369,65 @@ export const ConnectWallet = async (setUserKey, setNetwork) => {
 
   return publicKey;
 };
+
+export async function anyInvokeMainnet(
+  pubKey,
+  fee,
+  networkPassphrase,
+  contractId,
+  operation,
+  args,
+  memo
+) {
+  const body = {
+    pubKey: pubKey,
+    fee: fee,
+    networkPassphrase: networkPassphrase,
+    contractId: contractId,
+    operation: operation,
+    args: args,
+    memo: memo,
+  };
+
+  try {
+    const response = await axios.post(
+      `${STELLAR_SDK_SERVER_URL}/anyInvoke`,
+      body,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const xdr = response.data.data;
+
+    const signedTx = await signTransaction(xdr, { network: "PUBLIC" });
+
+    return signedTx;
+  } catch (error) {
+    console.error(
+      "Error sending transaction:",
+      error.response ? error.response.data : error.message
+    );
+  }
+}
+
+export async function sendTransactionMainnet(signedTx, networkPassphrase) {
+  try {
+    const response = await axios.post(
+      `${STELLAR_SDK_SERVER_URL}/sendTransaction`,
+      {
+        signedTx: signedTx,
+        networkPassphrase: networkPassphrase,
+      }
+    );
+
+    return response.data.data;
+  } catch (error) {
+    console.error(
+      "Error sending transaction:",
+      error.response ? error.response.data : error.message
+    );
+  }
+}

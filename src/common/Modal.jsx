@@ -1,6 +1,6 @@
-import { Fragment } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { Fragment } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 
 function Modal({ open, onClose, heading, children }) {
   return (
@@ -41,7 +41,7 @@ function Modal({ open, onClose, heading, children }) {
                 >
                   <XMarkIcon className="h-6 w-6" aria-hidden="true" />
                 </button>
-                <div className={heading ? 'mt-5' : 'mt-12'}>{children}</div>
+                <div className={heading ? "mt-5" : "mt-12"}>{children}</div>
               </Dialog.Panel>
             </Transition.Child>
           </div>

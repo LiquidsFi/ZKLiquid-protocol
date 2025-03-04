@@ -7,9 +7,10 @@ import { Tab } from "@headlessui/react";
 
 import { useMediaQuery } from "usehooks-ts";
 
-import bridges from "@/assets/svg/bridge.svg";
-import numbers from "@/assets/svg/number.svg";
-import users from "@/assets/svg/users.svg";
+// import bridges from "@/assets/svg/bridge.svg";
+import Bridges from "../../assets/svg/bridge.svg";
+import Numbers from "@/assets/svg/number.svg";
+import Users from "@/assets/svg/users.svg";
 import SuccessModal from "../../components/SuccessModal";
 import { useAccount, useSwitchChain } from "wagmi";
 import { erc20Abi, formatEther } from "viem";
@@ -31,11 +32,14 @@ import {
   bscTestnet,
   polygonAmoy,
 } from "@wagmi/core/chains";
+import TopStats from "../../common/TopStats";
 
 function Trade() {
   const isMd = useMediaQuery("(min-width: 1024px)");
   const { chain, address, isConnected } = useAccount();
   const { chains } = useSwitchChain();
+
+  // console.log("the connected address is", typeof address);
 
   const [selectedToken, setSelectedToken] = useState(null);
   const [statsInfo, setStatsInfo] = useState(0);
@@ -57,54 +61,59 @@ function Trade() {
   const [userKeyXLM, setUserKeyXLM] = useState("");
   const [networkXLM, setNetworkXLM] = useState("");
 
-  useEffect(() => {
-    async function fetchUsers(contract, chain) {
-      const result = await readContract(config, {
-        chainId: chain,
-        abi: faucetAbi,
-        address: contract,
-        functionName: "numberOfRequests",
-      });
-      return Number(result);
-    }
-    async function getTotalRes() {
-      let total = 0;
-      for (let i = 0; i < chains.length; i++) {
-        const itotal = await fetchUsers(
-          faucetContractJson.contracts[chains[i].id],
-          chains[i].id
-        );
-        total += itotal;
-      }
-      setTotalRes(() => total);
-    }
-    getTotalRes();
-  }, [address, chain]);
+  // useEffect(() => {
+  //   async function fetchUsers(contract, chain) {
+  //     const result = await readContract(config, {
+  //       chainId: chain,
+  //       abi: faucetAbi,
+  //       address: contract,
+  //       functionName: "numberOfRequests",
+  //     });
+  //     return Number(result);
+  //   }
+  //   async function getTotalRes() {
+  //     let total = 0;
+  //     for (let i = 0; i < chains.length; i++) {
+  //       const itotal = await fetchUsers(
+  //         faucetContractJson.contracts[chains[i].id],
+  //         chains[i].id
+  //       );
+  //       total += itotal;
+  //     }
+  //     setTotalRes(() => total);
+  //   }
+  //   if (address) {
+  //     getTotalRes();
+  //   }
+  // }, [address, chain]);
 
-  useEffect(() => {
-    async function fetchBalance1(token, addr) {
-      const result = await readContract(config, {
-        chainId: chain?.id,
-        abi: erc20Abi,
-        address: token,
-        functionName: "balanceOf",
-        args: [addr],
-      });
-      setUsdtBalance(() => formatEther(result));
-    }
-    async function fetchBalance2(token, addr) {
-      const result = await readContract(config, {
-        chainId: chain?.id,
-        abi: erc20Abi,
-        address: token,
-        functionName: "balanceOf",
-        args: [addr],
-      });
-      setUsdcBalance(() => formatEther(result));
-    }
-    fetchBalance1(usdtToken, poolContract);
-    fetchBalance2(usdcToken, poolContract);
-  }, [address, chain, poolContract]);
+  // useEffect(() => {
+  //   async function fetchBalance1(token, addr) {
+  //     const result = await readContract(config, {
+  //       chainId: chain?.id,
+  //       abi: erc20Abi,
+  //       address: token,
+  //       functionName: "balanceOf",
+  //       args: [addr],
+  //     });
+  //     setUsdtBalance(() => formatEther(result));
+  //   }
+  //   async function fetchBalance2(token, addr) {
+  //     const result = await readContract(config, {
+  //       chainId: chain?.id,
+  //       abi: erc20Abi,
+  //       address: token,
+  //       functionName: "balanceOf",
+  //       args: [addr],
+  //     });
+  //     setUsdcBalance(() => formatEther(result));
+  //   }
+
+  //   if (address) {
+  //     fetchBalance1(usdtToken, poolContract);
+  //     fetchBalance2(usdcToken, poolContract);
+  //   }
+  // }, [address, chain, poolContract]);
 
   const handleTokenSelect = (token) => {
     setSelectedToken(token);
@@ -142,74 +151,12 @@ function Trade() {
           </div>
         </div>
       )}
-      <div className="text-white">
-        <h1 className="heading-primary">
-          Multichain Bridge (<span className="text-red-300">Testnet</span>){" "}
+      <div className="text-white   ">
+        <h1 className="heading-primary ">
+          Multichain Bridge (<span className="text-red-300">Beta</span>){" "}
         </h1>
 
-        <div className="flex flex-shrink-0 gap-4 mt-8 overflow-auto scroll-track-hide">
-          <div className="inline-flex items-center w-full min-w-[272px] gap-3 bg-[#04131F] rounded-xl p-3">
-            <img src={bridges} alt="" />
-            <div>
-              <p className="text-[#6D7A86] text-sm font-medium">
-                Bridge TVL (USD)
-              </p>
-              <div className="flex items-end gap-2 mt-1">
-                <p className="text-base font-semibold leading-5">
-                  ${totalBalance}
-                </p>
-                <p className="text-xs text-[#34D399] font-bold">7d : 0</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="inline-flex items-center w-full min-w-[272px] gap-3 bg-[#04131F]  rounded-xl p-3">
-            <img src={bridges} alt="" />
-            <div>
-              <p className="text-[#6D7A86] text-sm font-medium">Bridge APR</p>
-              <div className="flex items-end gap-2 mt-1">
-                <p className="text-base font-semibold leading-5">$0</p>
-                <p className="text-xs text-[#34D399] font-bold">7d: 0</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="inline-flex items-center w-full min-w-[272px] gap-3 bg-[#04131F]  rounded-xl p-3">
-            <img src={numbers} alt="" />
-            <div>
-              <p className="text-[#6D7A86] text-sm font-medium">
-                Number of Chains Integrated
-              </p>
-              <div className="flex items-end gap-2 mt-1">
-                <p className="text-base font-semibold leading-5">{5}</p>
-                <p className="text-xs text-[#34D399] font-bold">
-                  7d: 0
-                  {/* {statsInfo.dexesNumber7days > 0
-                    ? `+${statsInfo.dexesNumber7days}`
-                    : `${statsInfo.dexesNumber7days}`} */}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="inline-flex items-center w-full min-w-[272px] gap-3 bg-[#04131F]  rounded-xl p-3">
-            <img src={users} alt="" />
-            <div>
-              <p className="text-[#6D7A86] text-sm font-medium">
-                Number of Users
-              </p>
-              <div className="flex items-end gap-2 mt-1">
-                <p className="text-base font-semibold leading-5">{totalRes}</p>
-                <p className="text-xs text-[#34D399] font-bold">
-                  7d: 0
-                  {/* {statsInfo.uniqueAddresses7days > 0
-                    ? `+${statsInfo.uniqueAddresses7days}`
-                    : `${statsInfo.uniqueAddresses7days}`} */}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <TopStats totalBalance={totalBalance} totalRes={totalRes} />
 
         <div className="flex-wrap items-center gap-4 p-4 mt-5 mb-6 md:flex md:flex-nowrap bg-[#04131F] rounded-2xl lg:pl-6">
           <svg
@@ -271,19 +218,23 @@ function Trade() {
         </div>
 
         {isMd ? (
-          <div className="grid items-start grid-cols-2  gap-6">
-            <TopTokensList
-              onTokenSelect={handleTokenSelect}
-              transactionData={transactionData}
-            />
-            <SwapCard
-              selectedToken={selectedToken}
-              messageId={messageId}
-              setMessageId={setMessageId}
-              setUserKeyXLM={setUserKeyXLM}
-              setNetworkXLM={setNetworkXLM}
-              userKeyXLM={userKeyXLM}
-            />
+          <div className="grid items-start grid-cols-7 gap-6 pt-4">
+            <div className="col-span-4">
+              <TopTokensList
+                onTokenSelect={handleTokenSelect}
+                transactionData={transactionData}
+              />
+            </div>
+            <div className="col-span-3">
+              <SwapCard
+                selectedToken={selectedToken}
+                messageId={messageId}
+                setMessageId={setMessageId}
+                setUserKeyXLM={setUserKeyXLM}
+                setNetworkXLM={setNetworkXLM}
+                userKeyXLM={userKeyXLM}
+              />
+            </div>
           </div>
         ) : (
           <Tab.Group>
