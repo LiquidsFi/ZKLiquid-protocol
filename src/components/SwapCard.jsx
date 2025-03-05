@@ -372,40 +372,6 @@ function SwapCard({
     // console.log("deposit confirmed", result);
   }
 
-  async function handleTransferXLM() {
-    const amountSent = Soroban.parseTokenAmount(amount, 7);
-
-    const txBuiderTransfer = await getTxBuilder(
-      userPubKey,
-      xlmToStroop(100).toString(),
-      server,
-      selectedNetwork?.networkPassphrase
-    );
-
-    const xdr = await transferToEVM({
-      poolContract: "CDKPP6KCCAPGFZNOWSAQQXHKCWXRXI33QGTVZG4MUURVAIPUSQLGZVJ5",
-      from: userPubKey,
-      to: "0x5e393d56389C0A76968A02C8d4cB71D3A048c5c7",
-      token_address: "CCMJ4KRNRUUO3SA36RPVXLSP364CSTTFUHLM5U767UCXTAQIE4SBYAA5",
-      amount: amountSent,
-      memo: "transfer to EVM",
-      txBuilderAdmin: txBuiderTransfer,
-      server: server,
-    });
-
-    // console.log("deposit transaction", xdr);
-
-    const signature = await signTransaction(xdr, { network: "FUTURENET" });
-
-    const result = await submitTx(
-      signature,
-      selectedNetwork?.networkPassphrase,
-      server
-    );
-
-    // console.log("deposit confirmed", result);
-  }
-
   async function handleTransferFromXLM() {
     setIsProcessing(true);
     try {
@@ -551,6 +517,8 @@ function SwapCard({
     } else {
       await handleTransferToXLM();
     }
+    setRecipientAddr("");
+    setSelectedDestinationChain(null);
   }
 
   async function awaitTransactionConfirmation(hashIn) {
