@@ -645,7 +645,7 @@ function SwapCard({
               {totalDebitedAmount && (
                 <div className="text-green-500 flex gap-2 rounded-lg px-2">
                   <span>
-                    {Number(totalDebitedAmount)?.toFixed(2)} {"USDC"}
+                    {Number(totalDebitedAmount)?.toFixed(4)} {"USDC"}
                   </span>
                   <InfoCircle className="w-5 h-auto text-gray-400" />
                 </div>
