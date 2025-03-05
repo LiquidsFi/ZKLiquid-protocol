@@ -39,7 +39,7 @@ export default function TopStats({ totalBalance, totalRes }) {
             Number of Chains Integrated
           </p>
           <div className="flex items-end gap-2 mt-1">
-            <p className="text-base font-semibold leading-5">{5}</p>
+            <p className="text-base font-semibold leading-5">{3}</p>
             <p className="text-xs text-[#34D399] font-bold">
               7d: 0
               {/* {statsInfo.dexesNumber7days > 0
@@ -56,7 +56,7 @@ export default function TopStats({ totalBalance, totalRes }) {
         <div>
           <p className="text-[#6D7A86] text-sm font-medium">Number of Users</p>
           <div className="flex items-end gap-2 mt-1">
-            <p className="text-base font-semibold leading-5">{totalRes}</p>
+            <p className="text-base font-semibold leading-5">{totalRes || 9}</p>
             <p className="text-xs text-[#34D399] font-bold">
               7d: 0
               {/* {statsInfo.uniqueAddresses7days > 0
