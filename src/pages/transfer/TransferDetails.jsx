@@ -61,7 +61,7 @@ export default function TransactionDetails() {
 				<div className="border rounded border-neutral-900 flex-1">
 					<div className="border-b p-4 border-neutral-900 flex items-center gap-2">
 						<UsdtLogo className="w-10 h-10" />
-						{/* <img src={usdtLogo} alt="" className="w-10 h-10" /> */}
+
 						<div className="flex flex-col">
 							<span className="text-neutral-300">From:</span>
 							<span>USDT</span>
@@ -71,7 +71,7 @@ export default function TransactionDetails() {
 						<span className="text-neutral-300">Actual order asset</span>
 						<div className="flex items-center gap-1">
 							<UsdtLogo className="w-5 h-5" />
-							{/* <img src={usdtLogo} alt="" className="w-5 h-5" /> */}
+
 							<span>USDT Coin</span>
 						</div>
 					</div>
@@ -122,10 +122,10 @@ export default function TransactionDetails() {
 						<span>04 Mar, 2025 • 2:17:46 PM</span>
 					</div>
 				</div>
+
 				<div className="border rounded border-neutral-900 flex-1">
 					<div className="border-b p-4 border-neutral-900 flex items-center gap-2">
 						<BnbLogo className="w-10 h-10" />
-						{/* <img src={bnbLogo} alt="" className="w-10 h-10" /> */}
 						<div className="flex flex-col">
 							<span className="text-neutral-300">To:</span>
 							<span>BCH</span>
@@ -135,7 +135,6 @@ export default function TransactionDetails() {
 						<span className="text-neutral-300">Asset</span>
 						<div className="flex items-center gap-1">
 							<BnbLogo className="w-5 h-5" />
-							{/* <img src={bnbLogo} alt="" className="w-5 h-5" /> */}
 							<span>BCH Coin</span>
 						</div>
 					</div>

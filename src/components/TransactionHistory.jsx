@@ -48,7 +48,7 @@ export default function TransactionHistory({ transactionData }) {
 													className="cursor-pointer hover:bg-[#202026]"
 													onClick={() => handleCCIPOpen(transaction)}
 												>
-													<Link to={`/transfer/${transaction.id}`}>
+													<Link to={`/transfers/${transaction.id}`}>
 														<td className="px-4 py-4 text-sm font-bold text-gray-200 sm:px-6 whitespace-nowrap">
 															<div className="inline-flex items-center">
 																<img
