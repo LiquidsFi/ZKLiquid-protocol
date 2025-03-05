@@ -43,15 +43,3 @@ input::-webkit-inner-spin-button {
 input[type="number"] {
 	-moz-appearance: textfield;
 }
-
-progress::-moz-progress-bar {
-	background-color: #2dd4bf;
-}
-
-progress::-webkit-progress-value {
-	background-color: #2dd4bf;
-}
-
-progress {
-	color: #2dd4bf;
-}
