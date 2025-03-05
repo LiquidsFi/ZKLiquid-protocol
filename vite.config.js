@@ -21,25 +21,27 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    react(),
-    svgr({
-      // svgr options: https://react-svgr.com/docs/options/
-      svgrOptions: {
-        exportType: "default",
-        ref: true,
-        svgo: false,
-        titleProp: true,
-      },
-      include: "**/*.svg",
-    }),
-  ],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-  server: {
-    port: 8080,
-  },
+	plugins: [
+		react(),
+		svgr({
+			// svgr options: https://react-svgr.com/docs/options/
+			svgrOptions: {
+				exportType: "default",
+				ref: true,
+				svgo: false,
+				titleProp: true,
+			},
+			include: "**/*.svg",
+		}),
+	],
+	resolve: {
+		alias: {
+			"@": path.resolve(__dirname, "./src"),
+		},
+	},
+	server: {
+		port: 8080,
+	},
+	base: "/",
+	publicDir: "public",
 });
