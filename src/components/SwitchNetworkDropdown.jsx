@@ -1,12 +1,10 @@
 import { Fragment, useContext, useEffect, useState } from "react";
 import { Menu, Transition } from "@headlessui/react";
 import { useAccount, useSwitchChain } from "wagmi";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import { ArrowDown2 } from "iconsax-react";
 import { toast } from "react-toastify";
-import { config } from "../Wagmi";
-import { avalancheFuji, sepolia } from "viem/chains";
+
 import { SidebarContext } from "../context/SidebarContext";
 import WalletsModal from "./WalletsModal";
 
@@ -98,14 +96,22 @@ function SwitchNetworkDropdown({ width, allChains }) {
               ) : (
                 <>
                   <div className="bg-[#101115] p-1 rounded-full">
-                    <img
-                      className="w-6 h-6"
-                      src={`/cryptoIcons/wrong.svg`}
-                      alt=""
-                    />
+                    <svg
+                      className="h-6 w-auto text-gray-100"
+                      viewBox="0 0 48 48"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <g clipPath="url(#clip0_1290_9617)">
+                        <path
+                          d="M6 10H10V6C7.79 6 6 7.79 6 10ZM6 26H10V22H6V26ZM14 42H18V38H14V42ZM6 18H10V14H6V18ZM26 6H22V10H26V6ZM38 6V10H42C42 7.79 40.21 6 38 6ZM10 42V38H6C6 40.21 7.79 42 10 42ZM6 34H10V30H6V34ZM18 6H14V10H18V6ZM22 42H26V38H22V42ZM38 26H42V22H38V26ZM38 42C40.21 42 42 40.21 42 38H38V42ZM38 18H42V14H38V18ZM38 34H42V30H38V34ZM30 42H34V38H30V42ZM30 10H34V6H30V10ZM14 34H34V14H14V34ZM18 18H30V30H18V18Z"
+                          fill="currentColor"
+                        />
+                      </g>
+                    </svg>
                   </div>
 
-                  <span>Wrong Network</span>
+                  <span>Select Network</span>
                 </>
               )}
 

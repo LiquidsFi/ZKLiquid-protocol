@@ -20,7 +20,7 @@ const SuccessModal = ({ onClose, hashUrl }) => {
 
   const BASE_CCIP_URL = "https://ccip.chain.link/msg";
   const handleCCIPOpen = () => {
-    window.open(`${BASE_CCIP_URL}/${hashUrl}`, "_blank");
+    // window.open(`${BASE_CCIP_URL}/${hashUrl}`, "_blank");
     onClose();
   };
 
@@ -57,7 +57,7 @@ const SuccessModal = ({ onClose, hashUrl }) => {
               Transaction Submitted successfully
             </p>
             <p className="mt-3 text-sm font-medium text-gray-500">
-              You can track the transaction status on the CCIP explorer
+              You can track the transfer status on LiquidsFi explorer
             </p>
             <div className="mt-8">
               <button
@@ -65,7 +65,7 @@ const SuccessModal = ({ onClose, hashUrl }) => {
                 type="button"
                 className="inline-flex items-center justify-center px-6 py-3 text-sm font-semibold leading-5 text-indigo-600 transition-all duration-200 bg-indigo-100 border border-transparent rounded-md hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 hover:bg-indigo-600"
               >
-                Go to CCIP explorer
+                Go to LiquidsFi explorer
               </button>
             </div>
           </div>

@@ -29,9 +29,16 @@ function DestinationChainDropdown({
   // const selectedDestinationChain =
   //   selectedId && allChains.filter((x) => x.id === selectedId);
 
-  const chainOptions = allChains
+  let chainOptions = allChains
     .filter((x) => x.id !== selectedSourceChain?.id)
     .filter((x) => x.id !== selectedDestinationChain?.id);
+
+  if (selectedSourceChain?.id === 1 || selectedSourceChain?.id === 56) {
+    chainOptions = allChains
+      .filter((x) => x.id !== 1)
+      .filter((x) => x.id !== 56)
+      .filter((x) => x.id !== selectedDestinationChain?.id);
+  }
 
   console.log("destination chain Options");
 
