@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import BigNumber from "bignumber.js";
 import {
   isAllowed,
@@ -7,6 +6,7 @@ import {
   requestAccess,
   getNetwork,
   getPublicKey,
+  addToken,
 } from "@stellar/freighter-api";
 
 import {
@@ -26,13 +26,36 @@ import {
   StrKey,
   Soroban,
   sign,
+  Horizon,
 } from "@stellar/stellar-sdk";
 import axios from "axios";
 
-const secret = "SCLQTNYINVRXY32WDORXTD2JMM6YPBIASP7DKHXVEZX47DWEYZPRY2HO";
-const contract_file = "contract path here";
+export const assetMetadata = {
+  CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75: {
+    assetCode: "USDC",
+    assetIssuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+  },
+};
 
-export const kp = Keypair.fromSecret(secret);
+export const HORIZON_URL =
+  "https://rpc.ankr.com/premium-http/stellar_horizon/7a27876214d22119ec2a70f6adb115e7eb45ede20a30f49f945cfcd5563e5a3b";
+
+export async function hasTrustline(accountId, assetId) {
+  try {
+    const server = new Horizon.Server(HORIZON_URL);
+    const assetData = assetMetadata[assetId];
+    const account = await server.loadAccount(accountId);
+
+    return account.balances.some(
+      (balance) =>
+        balance.asset_code === assetData?.assetCode &&
+        balance.asset_issuer === assetData?.assetIssuer
+    );
+  } catch (error) {
+    console.error("Error fetching account:", error);
+    return false;
+  }
+}
 
 export const BASE_FEE = "100";
 
@@ -155,52 +178,6 @@ export const depositToken = async ({
 
   const preparedTransaction = await server.prepareTransaction(built);
   // console.log("built transaction", sim);
-
-  return preparedTransaction.toXDR();
-};
-
-export const transferPayout = async ({
-  poolContract,
-  to,
-  token_address,
-  amount,
-  memo,
-  txBuilderAdmin,
-  server,
-}) => {
-  const oracle = (await server.getAccount(kp.publicKey()))._accountId;
-
-  const contract = new Contract(poolContract);
-
-  const tx = txBuilderAdmin
-    .addOperation(
-      contract.call(
-        "transfer_payout",
-        ...[
-          accountToScVal(oracle), // from
-          accountToScVal(to), // to
-          accountToScVal(token_address), //token id
-          new ScInt(amount).toI128(), // quantity
-        ]
-      )
-    )
-    .setTimeout(TimeoutInfinite);
-
-  if (memo?.length > 0) {
-    tx.addMemo(Memo.text(memo));
-  }
-
-  const built = tx.build();
-
-  const sim = await server.simulateTransaction(built);
-
-  const preparedTransaction = await server.prepareTransaction(built);
-  // console.log("built transaction", sim);
-
-  const signedTx = await preparedTransaction.sign(kp);
-  const sendTxOracle = await server.sendTransaction(preparedTransaction);
-
-  // console.log("signed tx", sendTxOracle);
 
   return preparedTransaction.toXDR();
 };
@@ -401,6 +378,75 @@ export async function anyInvokeMainnet(
     );
 
     const xdr = response.data.data;
+
+    const signedTx = await signTransaction(xdr, { network: "PUBLIC" });
+
+    return signedTx;
+  } catch (error) {
+    console.error(
+      "Error sending transaction:",
+      error.response ? error.response.data : error.message
+    );
+  }
+}
+
+export async function getTrustline(accountId, assetId) {
+  const body = {
+    accountId: accountId,
+    assetId: assetId,
+  };
+
+  try {
+    const response = await axios.post(
+      `${STELLAR_SDK_SERVER_URL}/getTrustline`,
+      body,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const trustline = response.data.data;
+
+    return trustline;
+  } catch (error) {
+    console.error(
+      "Error fetching trustline",
+      error.response ? error.response.data : error.message
+    );
+  }
+}
+
+export async function changeTrustline(
+  accountId,
+  fee,
+  networkPassphrase,
+  assetId
+) {
+  const body = {
+    accountId: accountId,
+    fee: fee,
+    networkPassphrase: networkPassphrase,
+    assetId: assetId,
+  };
+
+  try {
+    const response = await axios.post(
+      `${STELLAR_SDK_SERVER_URL}/changeTrust`,
+      body,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const xdr = response.data.data;
+
+    console.log("the transaction", xdr);
+
+    return;
 
     const signedTx = await signTransaction(xdr, { network: "PUBLIC" });
 

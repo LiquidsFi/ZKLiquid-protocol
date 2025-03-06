@@ -23,6 +23,7 @@ import Liquidity from "./pages/add-liquidity/Liquidity";
 import BonusRewardTab from "./components/ui/deposit/BonusRewardTab";
 import DepositsTab from "./components/ui/deposit/DepositsTab";
 import { SidebarContextProvider } from "./context/SidebarContext";
+import TransferStatus from "./pages/transfer-status/TransferStatus";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -34,6 +35,9 @@ const router = createBrowserRouter(
         <Route path="/bridge" element={<Trade />} />
         <Route path="/liquidity">
           <Route index element={<Liquidity />} />
+        </Route>
+        <Route path="/transfer">
+          <Route index element={<TransferStatus />} />
         </Route>
         <Route path="/loans">
           <Route
