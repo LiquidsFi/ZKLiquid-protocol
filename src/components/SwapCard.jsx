@@ -78,6 +78,9 @@ function SwapCard({
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
+  const [allowance, setAllowance] = useState(0);
+  // const [needApproval, setNeedApproval] = useState(false);
+
   const [hasTrust, setHasTrust] = useState(false);
 
   const { chain, address, isConnected } = useAccount();
@@ -104,7 +107,9 @@ function SwapCard({
 
   const isMobile = useMediaQuery("(max-width: 375px)");
 
-  const needApproval = parseFloat(curAllowance) < parseFloat(amount);
+  const needApproval = allowance < Number(totalDebitedAmount);
+
+  // console.log("need approval", needApproval);
 
   const {
     selectedSourceChain,
@@ -131,7 +136,7 @@ function SwapCard({
         recipientAddr,
         tokenAddress.USDC[1200]
       );
-      console.log("account has trust", accountHasTrust);
+      // console.log("account has trust", accountHasTrust);
 
       setHasTrust(accountHasTrust);
     }
@@ -424,13 +429,39 @@ function SwapCard({
       saveTransferData(trxData);
 
       setMessageId(res?.txHash);
-      console.log("transfer res", res);
+      // console.log("transfer res", res);
     } catch (e) {
       console.log(e);
     } finally {
       setIsProcessing(false);
     }
   }
+
+  useEffect(() => {
+    async function fetchAllowance(addr) {
+      const tokenDecimal = await readContract(config, {
+        abi: erc20Abi,
+        address: tokenAddress.USDC[selectedSourceChain?.id],
+        functionName: "decimals",
+      });
+
+      const result = await readContract(config, {
+        abi: erc20Abi,
+        address: tokenAddress.USDC[selectedSourceChain?.id],
+        functionName: "allowance",
+        args: [addr, bridgeContracts[selectedSourceChain?.id]],
+        account: addr,
+      });
+
+      setAllowance(formatUnits(result, tokenDecimal));
+
+      // console.log("allowance", formatUnits(result, tokenDecimal));
+      // setBalance(() => formatUnits(result, tokenDecimal));
+    }
+    if (selectedSourceChain && address && selectedSourceChain?.id !== 1200) {
+      fetchAllowance(address);
+    }
+  }, [address, chain, selectedSourceChain, isTransfer, updateBalances]);
 
   useEffect(() => {
     async function fetchBalance(addr) {
@@ -456,69 +487,32 @@ function SwapCard({
     }
   }, [address, chain, selectedSourceChain, isTransfer, updateBalances]);
 
-  // useEffect(() => {
-  //   async function awaitTransactionConfirmation(hashIn) {
-  //     const confirmHash = await waitForTransactionReceipt(config, {
-  //       chainId: chain.id,
-  //       hash: trxHash,
-  //     });
-
-  //     // console.log("the block hash is", confirmHash);
-  //     const msgId =
-  //       confirmHash.logs.length > 5
-  //         ? confirmHash.logs.at(5).topics.at(1)
-  //         : confirmHash.logs.at(-1).topics.at(1);
-
-  //     setIsProcessing(() => false);
-  //     if (isTransfer) {
-  //       setMessageId(() => msgId);
-  //       setAmount(() => 0);
-  //       setSelectedId();
-  //       setRecipientAddr(() => address);
-  //       const trxData = {
-  //         // details: `${amount} ${switchToken.name}: ${chain.name} to ${
-  //         //   chains.find((chain) => chain.id === selectedId).name // Assuming each chain object has a name property
-  //         // }`,
-  //         amount: amount,
-  //         from: isXLM ? 2024 : chain.id,
-  //         to: selectedId,
-  //         name: switchToken.name,
-  //         id: msgId,
-  //         time: new Date().toLocaleDateString(),
-  //       };
-  //       // setTransferData(() => ({
-  //       //   details: `${amount} ${switchToken.name}: ${chain.name} to ${
-  //       //     chains.find((chain) => chain.id === selectedId).name // Assuming each chain object has a name property
-  //       //   }`,
-  //       //   id: confirmHash.logs.at(-1).topics.at(1), // Use the same value as for setting messageId
-  //       // }));
-
-  //       saveTransferData(trxData);
-  //     }
-
-  //     setIsTransfer(false);
-  //   }
-
-  //   if (trxHash !== "") {
-  //     awaitTransactionConfirmation(trxHash);
-  //   }
-  // }, [trxHash]);
+  // console.log("the amount", amount, typeof amount);
+  // console.log("the amount", totalDebitedAmount, typeof totalDebitedAmount);
 
   async function handleApprove() {
     setIsProcessing(() => true);
-    let ethQuantity = "";
-    if (selectedSourceChain?.id?.toString() === "4200") {
-      ethQuantity = parseUnits(amount, 6);
-    } else if (selectedSourceChain?.id?.toString() === "3200") {
-      ethQuantity = parseUnits(amount, 18);
+    try {
+      let ethQuantity = "";
+      if (selectedSourceChain?.id?.toString() === "1") {
+        ethQuantity = parseUnits(totalDebitedAmount?.toString(), 6);
+      } else if (selectedSourceChain?.id?.toString() === "56") {
+        ethQuantity = parseUnits(totalDebitedAmount?.toString(), 18);
+      }
+
+      const res = await writeContract(config, {
+        abi: erc20Abi,
+        address: tokenAddress.USDC[selectedSourceChain?.id],
+        functionName: "approve",
+        args: [bridgeContracts[selectedSourceChain?.id], ethQuantity],
+      });
+      // setTrxHash(() => res);
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setUpdateBalances(uuidv4());
+      setIsProcessing(false);
     }
-    const res = await writeContract(config, {
-      abi: erc20Abi,
-      address: tokenAddress.USDC[selectedSourceChain?.id],
-      functionName: "approve",
-      args: [bridgeContracts[selectedSourceChain?.id], ethQuantity],
-    });
-    setTrxHash(() => res);
   }
 
   async function handleTransferTokens() {
@@ -562,39 +556,39 @@ function SwapCard({
         ethQuantity = parseUnits(amount, 18);
       }
 
-      if (hasTrust) {
-        const tx = await writeContract(config, {
-          abi: abi,
-          address: bridgeContracts[selectedSourceChain?.id],
-          functionName: "outgoingTransfer",
-          args: [
-            chainIds[selectedDestinationChain?.id],
-            recipientAddr,
-            tokenAddress.USDC[selectedSourceChain?.id],
-            ethQuantity,
-            false,
-          ],
-          value: bridgeFee,
-        });
+      console.log("the amount is", ethQuantity);
 
-        const res = await awaitTransactionConfirmation(tx);
-        setTrxHash(() => res);
+      const tx = await writeContract(config, {
+        abi: abi,
+        address: bridgeContracts[selectedSourceChain?.id],
+        functionName: "outgoingTransfer",
+        args: [
+          chainIds[selectedDestinationChain?.id],
+          recipientAddr,
+          tokenAddress.USDC[selectedSourceChain?.id],
+          ethQuantity,
+          false,
+        ],
+        value: bridgeFee,
+      });
 
-        console.log("response", res?.transactionHash);
+      const res = await awaitTransactionConfirmation(tx);
+      setTrxHash(() => res);
 
-        const trxData = {
-          amount: amount,
-          from: selectedSourceChain?.id,
-          to: selectedDestinationChain?.id,
-          name: "USDC",
-          id: res?.transactionHash,
-          time: new Date().toLocaleDateString(),
-        };
+      // console.log("response", res?.transactionHash);
 
-        saveTransferData(trxData);
+      const trxData = {
+        amount: amount,
+        from: selectedSourceChain?.id,
+        to: selectedDestinationChain?.id,
+        name: "USDC",
+        id: res?.transactionHash,
+        time: new Date().toLocaleDateString(),
+      };
 
-        setMessageId(res?.transactionHash);
-      }
+      saveTransferData(trxData);
+
+      setMessageId(res?.transactionHash);
     } catch (e) {
       console.log(e);
     } finally {
@@ -820,7 +814,7 @@ function SwapCard({
                 </>
               </Button>
             ) : needApproval ? (
-              <Button disabled={!amount || !selectedId} onClick={handleApprove}>
+              <Button disabled={!amount} onClick={handleApprove}>
                 Approve
               </Button>
             ) : (

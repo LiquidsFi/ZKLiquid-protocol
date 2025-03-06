@@ -40,7 +40,7 @@ function DestinationChainDropdown({
       .filter((x) => x.id !== selectedDestinationChain?.id);
   }
 
-  console.log("destination chain Options");
+  // console.log("destination chain Options");
 
   const nameLength = isMobile ? 15 : 30;
 

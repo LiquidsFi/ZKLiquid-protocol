@@ -30,7 +30,7 @@ function SwitchNetworkDropdown({ width, allChains }) {
   const [isOpen, setIsOpen] = useState(false);
 
   async function handleSwitchChain(id) {
-    console.log("this ran");
+    // console.log("this ran");
     if (id === 1200) {
       await handleConnectFreighter();
     } else {
@@ -61,7 +61,7 @@ function SwitchNetworkDropdown({ width, allChains }) {
     (chain) => chain.id !== selectedSourceChain?.id
   );
 
-  console.log("chain options", chainOptions);
+  // console.log("chain options", chainOptions);
   return (
     <>
       <Menu

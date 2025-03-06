@@ -31,7 +31,7 @@ function DashboardLayout() {
       const selectedChain = allChains?.find((chain) => chain?.id === 1200);
       setSelectedSourceChain(selectedChain);
     } else if (address && !userPubKey) {
-      console.log("this should run");
+      // console.log("this should run");
       const selectedChain = allChains?.find((chain) => chain?.id === 3200);
       setSelectedSourceChain(selectedChain);
     }

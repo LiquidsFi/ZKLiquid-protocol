@@ -330,7 +330,7 @@ export const ConnectWallet = async (setUserKey, setNetwork) => {
     const isAllowed = await setAllowed();
     publicKey = (await requestAccess()).address;
 
-    console.log("user key is", publicKey);
+    // console.log("user key is", publicKey);
 
     const nt = await getNetwork();
 
@@ -444,7 +444,7 @@ export async function changeTrustline(
 
     const xdr = response.data.data;
 
-    console.log("the transaction", xdr);
+    // console.log("the transaction", xdr);
 
     return;
 
