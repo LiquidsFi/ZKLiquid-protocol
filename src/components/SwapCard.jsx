@@ -813,7 +813,7 @@ function SwapCard({
                   <span className="ml-2">Processing...</span>
                 </>
               </Button>
-            ) : needApproval ? (
+            ) : needApproval && selectedSourceChain?.id !== 1200 ? (
               <Button disabled={!amount} onClick={handleApprove}>
                 Approve
               </Button>
