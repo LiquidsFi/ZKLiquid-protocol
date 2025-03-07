@@ -13,6 +13,7 @@ import WalletButton from "./WalletButton";
 
 import SwitchNetworkDropdown from "./SwitchNetworkDropdown";
 import { AnimatePresence, motion } from "framer-motion";
+import Cashback from "./ui/deposit/Cashback";
 
 function Header() {
   const { isOpen, setIsOpen, isXLM, setIsXLM, userPubKey, allChains } =
@@ -95,6 +96,7 @@ function Header() {
               </button>
             </div>
           </div> */}
+          <Cashback />
           <WalletButton />
           {isConnected || userPubKey ? (
             <SwitchNetworkDropdown allChains={allChains} />

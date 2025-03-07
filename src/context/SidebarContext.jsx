@@ -17,7 +17,10 @@ const SidebarContextProvider = ({ children }) => {
   const [selectedDestinationChain, setSelectedDestinationChain] =
     useState(null);
   const [selectedNetwork, setSelectedNetwork] = useState(null);
+  const [claimableCashback, setClaimableCashback] = useState("0.");
   const [freighterConnecting, setFreighterConnecting] = useState(false);
+  const [updateBalances, setUpdateBalances] = useState(0);
+  // const [messageId, setMessageId] = useState("");
   const { chains } = useSwitchChain();
 
   const stellarChain = { id: 1200, name: "Stellar Mainnet" };
@@ -67,6 +70,12 @@ const SidebarContextProvider = ({ children }) => {
         setSelectedNetwork,
         freighterConnecting,
         setFreighterConnecting,
+        claimableCashback,
+        setClaimableCashback,
+        updateBalances,
+        setUpdateBalances,
+        // messageId,
+        // setMessageId,
       }}
     >
       {children}

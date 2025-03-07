@@ -73,7 +73,7 @@ function SwapCard({
   userKeyXLM,
 }) {
   const [recheckTrustline, setRecheckTrustline] = useState(0);
-  const [updateBalances, setUpdateBalances] = useState(0);
+
   const [isOpen, setIsOpen] = useState(false);
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -123,11 +123,56 @@ function SwapCard({
     allChains,
     setSelectedNetwork,
     freighterConnecting,
+    claimableCashback,
+    setClaimableCashback,
+    updateBalances,
+    setUpdateBalances,
   } = useContext(SidebarContext);
 
-  // console.log("total debit amount", totalDebitedAmount);
+  useEffect(() => {
+    async function fetchCashback() {
+      const body = {
+        pubKey: userPubKey,
+        fee: BASE_FEE,
+        networkPassphrase: selectedNetwork?.networkPassphrase,
+        contractId: bridgeContracts[1200],
+        operation: "get_claimable_cashback",
+        args: [
+          { type: "Address", value: userPubKey },
+          {
+            type: "Address",
+            value: "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA",
+          },
+        ],
+      };
 
-  // console.log("selected source chain", selectedSourceChain?.id);
+      const response = await axios.post(
+        `${STELLAR_SDK_SERVER_URL}/simulateTransaction`,
+        body,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const receivedCashback = JSON.parse(response?.data?.data, (key, value) =>
+        /^\d+$/.test(value) ? BigInt(value) : value
+      );
+
+      const cashback = Soroban.formatTokenAmount(
+        receivedCashback?.claimable_amount?.toString(),
+        7
+      );
+
+      setClaimableCashback(cashback);
+
+      // setBalance(() => amount);
+    }
+    if (userPubKey && selectedSourceChain?.id === 1200) {
+      fetchCashback();
+    }
+  }, [userPubKey, selectedSourceChain, updateBalances]);
 
   useEffect(() => {
     setHasTrust(false);
