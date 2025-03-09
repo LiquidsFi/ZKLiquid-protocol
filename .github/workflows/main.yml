@@ -1,29 +1,29 @@
-on:
-  push:
-    branches: [main]
+# on:
+#   push:
+#     branches: [main]
 
-jobs:
-  deploy_job:
-    runs-on: ubuntu-latest
-    name: deploy
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: SFTP Deploy
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.1
-        with:
-          username: "frontdev2"
-          server: "139.144.25.39"
-          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
-          local_path: "./*"
-          remote_path: "/home/frontdev2/www/multiswap.syntrum.com/"
-          args: "-o ConnectTimeout=5"
-      - name: Execute SSH commmands on remote server
-        uses: JimCronqvist/action-ssh@master
-        with:
-          hosts: "frontdev2@139.144.25.39"
-          privateKey: ${{ secrets.SSH_PRIVATE_KEY }}
-          command: /home/frontdev2/www/multiswap.syntrum.com/npmi.sh
+# jobs:
+#   deploy_job:
+#     runs-on: ubuntu-latest
+#     name: deploy
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v2
+#       - name: SFTP Deploy
+#         uses: wlixcc/SFTP-Deploy-Action@v1.2.1
+#         with:
+#           username: "frontdev2"
+#           server: "139.144.25.39"
+#           ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+#           local_path: "./*"
+#           remote_path: "/home/frontdev2/www/multiswap.syntrum.com/"
+#           args: "-o ConnectTimeout=5"
+#       - name: Execute SSH commmands on remote server
+#         uses: JimCronqvist/action-ssh@master
+#         with:
+#           hosts: "frontdev2@139.144.25.39"
+#           privateKey: ${{ secrets.SSH_PRIVATE_KEY }}
+#           command: /home/frontdev2/www/multiswap.syntrum.com/npmi.sh
 
-#      - name: Install dependencies and build
-#        run: npm install && npm run build
+# #      - name: Install dependencies and build
+# #        run: npm install && npm run build
